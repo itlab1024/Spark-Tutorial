@@ -10,7 +10,7 @@ Spark 是Apache基金会开发的用于大数据处理的统一分析引擎。�
 打开[Spark下载地址](https://spark.apache.org/downloads.html)
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202208312006177.png)
 下载完成后，解压，如下图：
-![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202208312007639.png)
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202208312037740.png)
 # 交互Shell和运行示例
 spark的bin目录下提供了一个交互shell，并且他提供了很多例子，接下来我就运行spark-shell脚本，打开交互命令行
 ```shell
