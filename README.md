@@ -191,3 +191,22 @@ Pi is roughly 3.14032714032714
 22/08/31 20:18:29 INFO ShutdownHookManager: Deleting directory /private/var/folders/b7/yhnw9hws0ng2w1_khl8nr2t40000gn/T/spark-250b1c99-4798-4faf-b534-6ecdac448570
 ```
 可以看到日志中：Pi is roughly 3.14032714032714，这就是Pi的运算结果。
+# 快速上手
+Spark开发可以使用VS Code工具，或者IDEA。我使用的是IDEA。记下来简单介绍下使用IDEA创建一个项目。
+因为我要使用scala语言去写spark（也可以使用Java、Python、R等语言），项目管理可以使用Maven、Gradle、SBT
+SBT是scala项目的包管理工具，我这就使用SBT。
+## 创建项目
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011344345.png)
+## 引入spark依赖
+这里我先映入spring-core包。其他的包以后用到再引入，build.sbt是sbt的依赖配置，类似maven的pom。
+```sbt
+ThisBuild / version := "0.1.0-SNAPSHOT"
+
+ThisBuild / scalaVersion := "2.12.16"
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Spark-Tutorial"
+  )
+libraryDependencies += "org.apache.spark" % "spark-core_2.12" % "3.3.0"
+```
