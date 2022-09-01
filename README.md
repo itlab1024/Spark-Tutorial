@@ -192,11 +192,11 @@ Pi is roughly 3.14032714032714
 ```
 可以看到日志中：Pi is roughly 3.14032714032714，这就是Pi的运算结果。
 # 快速上手
-Spark开发可以使用VS Code工具，或者IDEA。我使用的是IDEA。记下来简单介绍下使用IDEA创建一个项目。
+Spark开发可以使用VS Code工具或者IDEA。我使用的是IDEA。记下来简单介绍下使用IDEA创建一个项目。
 因为我要使用scala语言去写spark（也可以使用Java、Python、R等语言），项目管理可以使用Maven、Gradle、SBT
 SBT是scala项目的包管理工具，我这就使用SBT。
 ## 创建项目
-![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011344345.png)
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011456148.png)
 ## 引入spark依赖
 这里我先映入spring-core包。其他的包以后用到再引入，build.sbt是sbt的依赖配置，类似maven的pom。
 ```sbt
