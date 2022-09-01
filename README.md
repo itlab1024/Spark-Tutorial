@@ -386,6 +386,104 @@ Process finished with exit code 0
 (java,1)
 (go,1)
 ```
+
 > 看到上面的代码有很多不理解的地方，比如setMaster里的local是什么意思？RDD是什么？
 > 别着急接下来慢慢学习。
-# 
+# 运行环境
+Spark的运行环境有开发环境、本地环境、独立环境（Standalone）、Hadoop Yarn模式、Kubernetes环境。
+* 开发环境：上面我们执行WordCount代码的环境就是开发环境，严格来说他并不是一种环境，仅仅用于开发。
+* 本地环境：使用spark-shell开启的环境就是本地环境，用于开发、测试、调试、演示等基本使用。
+* 独立环境：独立环境是最简单的模式，他是主从架构，生产可用。
+* Hadoop Yarn环境：据说国内主流，咱也不清楚，生产可用。
+* Kubernetes环境：这个我觉得肯定是流行的，因为容器化现在非常流行，生产可用。
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011528643.png)
+## 开发环境
+没啥好说的
+## 本地模式
+其实之前讲解shell的时候已经使用了本地模式，这里主要说下之前没有介绍的
+WebUI,本地环境会启动一个WebUI界面,启动日志中我们可以看到如下日志：
+```text
+22/09/01 15:39:20 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Spark context Web UI available at http://10.112.82.59:4040
+Spark context available as 'sc' (master = local[*], app id = local-1662017962631).
+```
+http://10.112.82.59:4040就是web界面
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011540886.png)
+我们将上面WordCount的代码放到shell中执行，首先要在spark安装目录下创建wordCount.txt文件。
+```shell
+➜  files pwd
+/Users/itlab/dev-tools/spark-3.3.0-bin-hadoop3/files
+➜  files cat wordCount.txt 
+I am learning spark
+I am learning go
+I am learning scala
+I am learning java
+```
+接下来在shell中执行WordCount的代码
+```shell
+scala> sc.textFile("files/wordCount.txt")
+res2: org.apache.spark.rdd.RDD[String] = files/wordCount.txt MapPartitionsRDD[5] at textFile at <console>:24
+
+scala> val rdd = sc.textFile("files/wordCount.txt")
+rdd: org.apache.spark.rdd.RDD[String] = files/wordCount.txt MapPartitionsRDD[7] at textFile at <console>:23
+
+scala> val flatRDD = rdd.flatMap(_.split(" "))
+flatRDD: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[8] at flatMap at <console>:23
+
+scala> val tupleRDD = flatRDD.map((_, 1))
+tupleRDD: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[9] at map at <console>:23
+
+scala> val result = tupleRDD.reduceByKey(_ + _)
+result: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[10] at reduceByKey at <console>:23
+
+scala> result.collect().foreach(println)
+(scala,1)
+(learning,4)
+(am,4)
+(java,1)
+(go,1)
+(spark,1)
+(I,4)
+```
+如果不降文件放入spark目录下会提示如下
+```text
+org.apache.hadoop.mapred.InvalidInputException: Input path does not exist: file:/Users/itlab/dev-tools/spark-3.3.0-bin-hadoop3/files/wordCount.txt
+  at org.apache.hadoop.mapred.FileInputFormat.singleThreadedListStatus(FileInputFormat.java:304)
+  at org.apache.hadoop.mapred.FileInputFormat.listStatus(FileInputFormat.java:244)
+  at org.apache.hadoop.mapred.FileInputFormat.getSplits(FileInputFormat.java:332)
+  at org.apache.spark.rdd.HadoopRDD.getPartitions(HadoopRDD.scala:208)
+  at org.apache.spark.rdd.RDD.$anonfun$partitions$2(RDD.scala:292)
+  at scala.Option.getOrElse(Option.scala:189)
+  at org.apache.spark.rdd.RDD.partitions(RDD.scala:288)
+  at org.apache.spark.rdd.MapPartitionsRDD.getPartitions(MapPartitionsRDD.scala:49)
+  at org.apache.spark.rdd.RDD.$anonfun$partitions$2(RDD.scala:292)
+  at scala.Option.getOrElse(Option.scala:189)
+  at org.apache.spark.rdd.RDD.partitions(RDD.scala:288)
+  at org.apache.spark.rdd.MapPartitionsRDD.getPartitions(MapPartitionsRDD.scala:49)
+  at org.apache.spark.rdd.RDD.$anonfun$partitions$2(RDD.scala:292)
+  at scala.Option.getOrElse(Option.scala:189)
+  at org.apache.spark.rdd.RDD.partitions(RDD.scala:288)
+  at org.apache.spark.rdd.MapPartitionsRDD.getPartitions(MapPartitionsRDD.scala:49)
+  at org.apache.spark.rdd.RDD.$anonfun$partitions$2(RDD.scala:292)
+  at scala.Option.getOrElse(Option.scala:189)
+  at org.apache.spark.rdd.RDD.partitions(RDD.scala:288)
+  at org.apache.spark.Partitioner$.$anonfun$defaultPartitioner$4(Partitioner.scala:78)
+  at org.apache.spark.Partitioner$.$anonfun$defaultPartitioner$4$adapted(Partitioner.scala:78)
+  at scala.collection.immutable.List.map(List.scala:293)
+  at org.apache.spark.Partitioner$.defaultPartitioner(Partitioner.scala:78)
+  at org.apache.spark.rdd.PairRDDFunctions.$anonfun$reduceByKey$4(PairRDDFunctions.scala:323)
+  at org.apache.spark.rdd.RDDOperationScope$.withScope(RDDOperationScope.scala:151)
+  at org.apache.spark.rdd.RDDOperationScope$.withScope(RDDOperationScope.scala:112)
+  at org.apache.spark.rdd.RDD.withScope(RDD.scala:406)
+  at org.apache.spark.rdd.PairRDDFunctions.reduceByKey(PairRDDFunctions.scala:323)
+  ... 47 elided
+Caused by: java.io.IOException: Input path does not exist: file:/Users/itlab/dev-tools/spark-3.3.0-bin-hadoop3/files/wordCount.txt
+  at org.apache.hadoop.mapred.FileInputFormat.singleThreadedListStatus(FileInputFormat.java:278)
+  ... 74 more
+```
+重新打开WebUI，会看到多了一个Job。
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011956399.png)
+这个Job就是刚才提交的WordCount。
+
+
+
