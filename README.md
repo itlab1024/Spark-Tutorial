@@ -210,3 +210,23 @@ lazy val root = (project in file("."))
   )
 libraryDependencies += "org.apache.spark" % "spark-core_2.12" % "3.3.0"
 ```
+## 安装插件
+IDEA开发scala需要安装scala插件
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011344345.png)
+使用使用maven，需要点击File菜单对项目进行scala框架支持。
+## Hello World
+搭建完项目后，实现个Hello world示例
+```scala
+package com.itlab1024.spark.start
+
+object HelloWorld {
+  def main(args: Array[String]): Unit = {
+    println("hello world!") // hello world!
+  }
+}
+```
+上面的例子还没有使用到spark，接下来写一个Spark的经典例子，WordCount。统计文本中单词数目。
+```scala
+
+```
+
