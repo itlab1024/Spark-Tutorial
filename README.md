@@ -228,11 +228,11 @@ lazy val root = (project in file("."))
 libraryDependencies += "org.apache.spark" % "spark-core_2.12" % "3.3.0"
 ```
 上面的例子还没有使用到spark，接下来写一个Spark的经典例子，WordCount。统计文本中单词数目。
-如何统计呢？
-1. 将文件中的数据读入到内存，结果是一行一行的。
-2. 将每行通过空格切分
-3. 转化为元组，比如(K,V)，K代表单词，V代表单词的数量（写死1）
-4. 然后通过K聚合将所有V加起
+如何统计呢？ 
+a.将文件中的数据读入到内存，结果是一行一行的。 
+b.将每行通过空格切分 
+c.转化为元组，比如(K,V)，K代表单词，V代表单词的数量（写死1）
+d.然后通过K聚合将所有V加起
 新建一个wordCount.txt
 ```text
 I am learning spark
@@ -390,16 +390,15 @@ Process finished with exit code 0
 > 看到上面的代码有很多不理解的地方，比如setMaster里的local是什么意思？RDD是什么？
 > 别着急接下来慢慢学习。
 # 运行环境
-Spark的运行环境有开发环境、本地环境、独立环境（Standalone）、Hadoop Yarn模式、Kubernetes环境。
-* 开发环境：上面我们执行WordCount代码的环境就是开发环境，严格来说他并不是一种环境，仅仅用于开发。
-* 本地环境：使用spark-shell开启的环境就是本地环境，用于开发、测试、调试、演示等基本使用。
-* 独立环境：独立环境是最简单的模式，他是主从架构，生产可用。
-* Hadoop Yarn环境：据说国内主流，咱也不清楚，生产可用。
-* Kubernetes环境：这个我觉得肯定是流行的，因为容器化现在非常流行，生产可用。
+Spark的运行环境有开发环境、本地环境、独立环境（Standalone）、Hadoop Yarn模式、Kubernetes环境。 ##开发模式：上面我们执行WordCount代码的环境就是开发环境，严格来说他并不是一种环境，仅仅用于开发。
+**本地模式**：使用spark-shell开启的环境就是本地环境，用于开发、测试、调试、演示等基本使用。
+**独立模式Stanalone**：独立模式是最简单的模式，他是主从架构，生产可用。
+**Hadoop Yarn模式**：据说国内主流，咱也不清楚，生产可用。
+**Kubernetes模式**：这个我觉得肯定是流行的，因为容器化现在非常流行，生产可用。
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011528643.png)
 ## 开发环境
 没啥好说的
-## 本地模式
+## 本地模式(单机)
 其实之前讲解shell的时候已经使用了本地模式，这里主要说下之前没有介绍的
 WebUI,本地环境会启动一个WebUI界面,启动日志中我们可以看到如下日志：
 ```text
@@ -484,6 +483,7 @@ Caused by: java.io.IOException: Input path does not exist: file:/Users/itlab/dev
 重新打开WebUI，会看到多了一个Job。
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011956399.png)
 这个Job就是刚才提交的WordCount。
+# 独立模式Standalone（集群）
 
 
 
