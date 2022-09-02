@@ -2,6 +2,7 @@
 > 而且项目中也使用到了Spark，所以学习下，Spark是使用Scala开发的。最好也掌握下Scala语言。
 > 我学习Spark主要有通过官网、尚硅谷(不得不说尚硅谷真的是业界良心，不是打广告啊😄)，另外就是不明白的时候问问度娘。
 > 本篇文章是我在学习了一遍之后重新来写的，一是为了加深记忆，而是想分享出来，跟网友互相学习，取长补短，共同进步。
+
 # 什么是Spark?
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202208312008157.png)
 Spark 是Apache基金会开发的用于大数据处理的统一分析引擎。它提供 Java、Scala、Python 和 R 语言中的高级 API，
@@ -389,6 +390,7 @@ Process finished with exit code 0
 
 > 看到上面的代码有很多不理解的地方，比如setMaster里的local是什么意思？RDD是什么？
 > 别着急接下来慢慢学习。
+
 # 运行环境
 Spark的运行环境有开发环境、本地环境、独立环境（Standalone）、Hadoop Yarn模式、Kubernetes环境。 ##开发模式：上面我们执行WordCount代码的环境就是开发环境，严格来说他并不是一种环境，仅仅用于开发。
 **本地模式**：使用spark-shell开启的环境就是本地环境，用于开发、测试、调试、演示等基本使用。
