@@ -485,7 +485,476 @@ Caused by: java.io.IOException: Input path does not exist: file:/Users/itlab/dev
 重新打开WebUI，会看到多了一个Job。
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011956399.png)
 这个Job就是刚才提交的WordCount。
-# 独立模式Standalone（集群）
+## 独立模式Standalone（集群）
+spark独立模式官网有详细的说明，接下来我简单介绍下该模式，并创建一个独立模式的集群环境。
+Spark独立模式采用的是Master-Slave主从模式。集群由自身管理，高可用的集群采用主备Master实现，通过Zookeeper协调。
+### 准备
+首先要准备四台机器（可以是虚拟机），我使用[vagrant](https://www.vagrantup.com/)搭配[virtualbox](https://www.virtualbox.org/)来创建虚拟机.
+```shell
+➜  spark-stanalone cat Vagrantfile 
+Vagrant.configure("2") do |config|
+   (1..4).each do |i|
+        config.vm.define "spark-standalone#{i}" do |node|
+            # 设置虚拟机的Box。指定本地的box文件
+            node.vm.box = "centos/7"
+
+            # 设置虚拟机的主机名
+            node.vm.hostname="spark-standalone#{i}"
+
+            # 设置虚拟机的IP
+            node.vm.network "private_network", ip: "192.168.56.#{i}"
+
+            # VirtaulBox相关配置
+            node.vm.provider "virtualbox" do |v|
+                # 设置虚拟机的名称
+                v.name = "spark-standalone#{i}"
+                # 设置虚拟机的内存大小
+                v.memory = 1024
+                # 设置虚拟机的CPU个数
+                v.cpus = 1
+            end
+        end
+   end
+end
+```
+然后执行vagrant up，可以看到开始创建虚拟机了，第一次使用可能没有centos/7包，会自动下载，但是因为服务器在国外很慢，可以先下载下来再使用vagrant box add。
+额~出现了如下问题
+```shell
+➜  spark-stanalone vagrant up
+Bringing machine 'spark-standalone1' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone2' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone3' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone4' up with 'virtualbox' provider...
+==> spark-standalone1: Box 'centos/7' could not be found. Attempting to find and install...
+    spark-standalone1: Box Provider: virtualbox
+    spark-standalone1: Box Version: >= 0
+==> spark-standalone1: Loading metadata for box 'centos/7'
+    spark-standalone1: URL: https://vagrantcloud.com/centos/7
+==> spark-standalone1: Adding box 'centos/7' (v2004.01) for provider: virtualbox
+    spark-standalone1: Downloading: https://vagrantcloud.com/centos/boxes/7/versions/2004.01/providers/virtualbox.box
+==> spark-standalone1: Box download is resuming from prior download progress
+Download redirected to host: cloud.centos.org
+    spark-standalone1: Calculating and comparing box checksum...
+==> spark-standalone1: Successfully added box 'centos/7' (v2004.01) for 'virtualbox'!
+==> spark-standalone1: You assigned a static IP ending in ".1" to this machine.
+==> spark-standalone1: This is very often used by the router and can cause the
+==> spark-standalone1: network to not work properly. If the network doesn't work
+==> spark-standalone1: properly, try changing this IP.
+==> spark-standalone1: Importing base box 'centos/7'...
+==> spark-standalone1: Matching MAC address for NAT networking...
+==> spark-standalone1: You assigned a static IP ending in ".1" to this machine.
+==> spark-standalone1: This is very often used by the router and can cause the
+==> spark-standalone1: network to not work properly. If the network doesn't work
+==> spark-standalone1: properly, try changing this IP.
+==> spark-standalone1: Checking if box 'centos/7' version '2004.01' is up to date...
+==> spark-standalone1: Setting the name of the VM: spark-standalone1
+==> spark-standalone1: Clearing any previously set network interfaces...
+There was an error while executing `VBoxManage`, a CLI used by Vagrant
+for controlling VirtualBox. The command and stderr is shown below.
+
+Command: ["hostonlyif", "create"]
+
+Stderr: 0%...
+Progress state: NS_ERROR_FAILURE
+VBoxManage: error: Failed to create the host-only adapter
+VBoxManage: error: VBoxNetAdpCtl: Error while adding new interface: failed to open /dev/vboxnetctl: No such file or directory
+VBoxManage: error: Details: code NS_ERROR_FAILURE (0x80004005), component HostNetworkInterfaceWrap, interface IHostNetworkInterface
+VBoxManage: error: Context: "RTEXITCODE handleCreate(HandlerArg *)" at line 95 of file VBoxManageHostonly.cpp
+```
+解决方案https://stackoverflow.com/questions/21069908/vboxmanage-error-failed-to-create-the-host-only-adapter
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209021116771.png)
+重新执行vagrant up
+```shell
+➜  spark-stanalone vagrant up
+Bringing machine 'spark-standalone1' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone2' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone3' up with 'virtualbox' provider...
+Bringing machine 'spark-standalone4' up with 'virtualbox' provider...
+==> spark-standalone1: You assigned a static IP ending in ".1" to this machine.
+==> spark-standalone1: This is very often used by the router and can cause the
+==> spark-standalone1: network to not work properly. If the network doesn't work
+==> spark-standalone1: properly, try changing this IP.
+==> spark-standalone1: Importing base box 'centos/7'...
+==> spark-standalone1: Matching MAC address for NAT networking...
+==> spark-standalone1: You assigned a static IP ending in ".1" to this machine.
+==> spark-standalone1: This is very often used by the router and can cause the
+==> spark-standalone1: network to not work properly. If the network doesn't work
+==> spark-standalone1: properly, try changing this IP.
+==> spark-standalone1: Checking if box 'centos/7' version '2004.01' is up to date...
+==> spark-standalone1: Setting the name of the VM: spark-standalone1
+==> spark-standalone1: Clearing any previously set network interfaces...
+==> spark-standalone1: Preparing network interfaces based on configuration...
+    spark-standalone1: Adapter 1: nat
+    spark-standalone1: Adapter 2: hostonly
+==> spark-standalone1: Forwarding ports...
+    spark-standalone1: 22 (guest) => 2222 (host) (adapter 1)
+==> spark-standalone1: Running 'pre-boot' VM customizations...
+==> spark-standalone1: Booting VM...
+==> spark-standalone1: Waiting for machine to boot. This may take a few minutes...
+    spark-standalone1: SSH address: 127.0.0.1:2222
+    spark-standalone1: SSH username: vagrant
+    spark-standalone1: SSH auth method: private key
+    spark-standalone1: 
+    spark-standalone1: Vagrant insecure key detected. Vagrant will automatically replace
+    spark-standalone1: this with a newly generated keypair for better security.
+    spark-standalone1: 
+    spark-standalone1: Inserting generated public key within guest...
+    spark-standalone1: Removing insecure key from the guest if it's present...
+    spark-standalone1: Key inserted! Disconnecting and reconnecting using new SSH key...
+==> spark-standalone1: Machine booted and ready!
+==> spark-standalone1: Checking for guest additions in VM...
+    spark-standalone1: No guest additions were detected on the base box for this VM! Guest
+    spark-standalone1: additions are required for forwarded ports, shared folders, host only
+    spark-standalone1: networking, and more. If SSH fails on this machine, please install
+    spark-standalone1: the guest additions and repackage the box to continue.
+    spark-standalone1: 
+    spark-standalone1: This is not an error message; everything may continue to work properly,
+    spark-standalone1: in which case you may ignore this message.
+==> spark-standalone1: Setting hostname...
+==> spark-standalone1: Configuring and enabling network interfaces...
+==> spark-standalone1: Rsyncing folder: /Users/itlab/vms/spark-stanalone/ => /vagrant
+.........省略很多日志........
+```
+打开VirtualBox可以看到四个虚拟机已经创建完毕。
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209021129927.png)
+使用vagrant ssh 主机名来连接虚拟机，例如
+
+```shell
+➜  spark-stanalone vagrant ssh spark-standalone1
+[vagrant@spark-standalone1 ~]$ 
+```
 
 
 
+四台虚拟机使用角色说明如下：
+
+
+
+| 主机名            | 角色         | IP地址         |
+| ----------------- | ------------ | -------------- |
+| spark-standalone1 | Master       | 192.168.56.101 |
+| spark-standalone2 | Master(备用) | 192.168.56.102 |
+| spark-standalone3 | Slave        | 192.168.56.103 |
+| spark-standalone4 | Slave        | 192.168.56.104 |
+
+修改四个主机的hosts，使其能够通过主机名互通
+
+```shell
+[root@spark-standalone1 vagrant]# sudo su 
+[root@spark-standalone1 vagrant]# cat >> /etc/hosts << EOF
+192.168.56.101 spark-standalone1
+192.168.56.102 spark-standalone2
+192.168.56.103 spark-standalone3
+192.168.56.104 spark-standalone4
+EOF
+```
+
+四个机器都安装JDK安装，spark运行依赖JDK。我安装的是JDK1.8
+
+```shell
+sudo yum install java-1.8.0-openjdk* -y
+```
+
+
+
+### 搭建(手动)
+
+手动搭建使用sbin目录下的start-master.sh、stop-master.sh、start-worker.sh、stop-worker.sh这几个文件。
+
+不用修改任何配置文件，通过命令行参数就可以启动集群。
+
+步骤就是先启动master，然后启动worker，此时指定master地址。
+
+首先将本地下载的spark包上传到四个虚拟机中，我使用的vagrant scp插件。
+
+```shell
+# 安装vagrant scp插件
+➜  spark-stanalone vagrant plugin install vagrant-scp 
+Installing the 'vagrant-scp' plugin. This can take a few minutes...
+Fetching vagrant-scp-0.5.9.gem
+Installed the plugin 'vagrant-scp (0.5.9)'!
+# ➜  spark-stanalone vagrant scp ~/Downloads/spark-3.3.0-bin-hadoop3.tgz spark-standalone1:/home/vagrant
+Warning: Permanently added '[127.0.0.1]:2222' (ED25519) to the list of known hosts.
+spark-3.3.0-bin-hadoop3.tgz                   100%  285MB  42.5MB/s   00:06
+# 其他三个的日志省略
+```
+
+分别在四个服务器上解压并重命名文件夹
+
+```shell
+➜  tar zxvf spark-3.3.0-bin-hadoop3.tgz && mv spark-3.3.0-bin-hadoop3 spark-standalone
+```
+
+然后执行如下命令启动Master（spark-standalone1节点）
+
+```shell
+[vagrant@spark-standalone1 spark-standalone]$ sbin/start-master.sh -h spark-standalone1 -p 7077 --webui-port 8080
+starting org.apache.spark.deploy.master.Master, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.master.Master-1-spark-standalone1.out
+```
+
+启动完毕后在宿主机上访问mater的webUI，http://spark-standalone1:8080
+
+![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209021427746.png)
+
+可以看到此时并没有workder。
+
+接下来启动工作节点（spark-standalone3和spark-standalone4）
+
+```shell
+[vagrant@spark-standalone3 spark-standalone]$ sbin/start-worker.sh spark://spark-standalone1:7077 -h spark-standalone3 --webui-port 8081
+starting org.apache.spark.deploy.worker.Worker, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.worker.Worker-1-spark-standalone3.out
+```
+
+spark://spark-standalone1:7077是集群地址，在webui上能获取到。
+
+此时spark-standalone3节点的worker已经启动，看看webUI上有何变化。
+
+![image-20220903172258429](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209031722623.png)
+
+可以看到增加了一个worker。
+
+再把spark-standalone4加入进来
+
+```shell
+[vagrant@spark-standalone4 spark-standalone]$ sbin/start-worker.sh spark://spark-standalone1:7077 -h spark-standalone4 --webui-port 8081
+starting org.apache.spark.deploy.worker.Worker, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.worker.Worker-1-spark-standalone4.out
+```
+
+查看WebUI
+
+![image-20220903172506133](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209031725226.png)
+
+也成功加入了进来。
+
+### 搭建（脚本启动）
+
+上面的启动方式是先启动master，然后一个一个workder的启动，这在节点少的情况下还可以，但是节点多的情况下就麻烦了。
+
+使用脚本启动主要是是如下步骤：
+
+A. Master通过SSH控制Worker节点，所以要保证各个节点能够通过ssh访问，并且无密码或者通过私钥访问。
+
+B. 配置conf下的spark-env.sh，在这里配置Master节点的信息（包括主机名、端口等），默认没有这个文件，只需要将其下的spark-env.sh.template重命名为spark-env.sh即可。
+
+C. conf下的workers.template重命名为workers，在这里配置所有workder的主机名。
+
+接下来来操作下。
+
+配置免密：
+
+四个节点需要配置允许密码登录
+
+```shell
+sudo vi /etc/ssh/sshd_config
+```
+
+将里面的PasswordAuthentication no修改为PasswordAuthentication yes。
+
+![image-20220903214717899](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209032147241.png)
+
+然后重启ssd服务
+
+```shell
+[vagrant@spark-standalone4 ~]$ systemctl restart sshd
+==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units ===
+Authentication is required to manage system services or units.
+Authenticating as: root
+Password: 
+==== AUTHENTICATION COMPLETE ===
+```
+
+在主节点（spark-standalone1）使用如下命令生成公私钥
+
+```shell
+[vagrant@spark-standalone1 ~]$ ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/vagrant/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/vagrant/.ssh/id_rsa.
+Your public key has been saved in /home/vagrant/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:3xWV7mKV24HBpVNzPIwrmvFde7nZe3gEy+k/GKdUk4A vagrant@spark-standalone4
+The key's randomart image is:
++---[RSA 2048]----+
+|            o +=+|
+|           E =o=+|
+|             oB +|
+|         . . oo@ |
+|        S = o.*+B|
+|         + o B+*+|
+|          . +.*o=|
+|             oo++|
+|               +=|
++----[SHA256]-----+
+```
+
+一路回车即可
+
+然后将其拷贝到其他服务器
+
+```
+[vagrant@spark-standalone4 ~]$ ssh-copy-id vagrant@spark-standalone1
+[vagrant@spark-standalone4 ~]$ ssh-copy-id vagrant@spark-standalone2
+[vagrant@spark-standalone4 ~]$ ssh-copy-id vagrant@spark-standalone3
+[vagrant@spark-standalone4 ~]$ ssh-copy-id vagrant@spark-standalone4
+```
+
+会让输入密码，我使用的是vagrant工具，默认密码是vagrant。
+
+**特别提醒** ：如果使用的是root用户，/etc/ssh/sshd_config需要修改允许Root登录，遇到问题问度娘。
+
+
+
+首先修改spark-env.sh，这里有很多配置项，我就简单配置下主要的，使其能够正常启动集群即可。
+
+```shell
+[vagrant@spark-standalone1 conf]$ cat spark-env.sh 
+#!/usr/bin/env bash
+
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# This file is sourced when running various Spark programs.
+# Copy it as spark-env.sh and edit that to configure Spark for your site.
+
+# Options read when launching programs locally with
+# ./bin/run-example or ./bin/spark-submit
+# - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
+# - SPARK_LOCAL_IP, to set the IP address Spark binds to on this node
+# - SPARK_PUBLIC_DNS, to set the public dns name of the driver program
+
+# Options read by executors and drivers running inside the cluster
+# - SPARK_LOCAL_IP, to set the IP address Spark binds to on this node
+# - SPARK_PUBLIC_DNS, to set the public DNS name of the driver program
+# - SPARK_LOCAL_DIRS, storage directories to use on this node for shuffle and RDD data
+# - MESOS_NATIVE_JAVA_LIBRARY, to point to your libmesos.so if you use Mesos
+
+# Options read in any mode
+# - SPARK_CONF_DIR, Alternate conf dir. (Default: ${SPARK_HOME}/conf)
+# - SPARK_EXECUTOR_CORES, Number of cores for the executors (Default: 1).
+# - SPARK_EXECUTOR_MEMORY, Memory per Executor (e.g. 1000M, 2G) (Default: 1G)
+# - SPARK_DRIVER_MEMORY, Memory for Driver (e.g. 1000M, 2G) (Default: 1G)
+
+# Options read in any cluster manager using HDFS
+# - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
+
+# Options read in YARN client/cluster mode
+# - YARN_CONF_DIR, to point Spark towards YARN configuration files when you use YARN
+
+# Options for the daemons used in the standalone deploy mode
+# - SPARK_MASTER_HOST, to bind the master to a different IP address or hostname
+# - SPARK_MASTER_PORT / SPARK_MASTER_WEBUI_PORT, to use non-default ports for the master
+# - SPARK_MASTER_OPTS, to set config properties only for the master (e.g. "-Dx=y")
+# - SPARK_WORKER_CORES, to set the number of cores to use on this machine
+# - SPARK_WORKER_MEMORY, to set how much total memory workers have to give executors (e.g. 1000m, 2g)
+# - SPARK_WORKER_PORT / SPARK_WORKER_WEBUI_PORT, to use non-default ports for the worker
+# - SPARK_WORKER_DIR, to set the working directory of worker processes
+# - SPARK_WORKER_OPTS, to set config properties only for the worker (e.g. "-Dx=y")
+# - SPARK_DAEMON_MEMORY, to allocate to the master, worker and history server themselves (default: 1g).
+# - SPARK_HISTORY_OPTS, to set config properties only for the history server (e.g. "-Dx=y")
+# - SPARK_SHUFFLE_OPTS, to set config properties only for the external shuffle service (e.g. "-Dx=y")
+# - SPARK_DAEMON_JAVA_OPTS, to set config properties for all daemons (e.g. "-Dx=y")
+# - SPARK_DAEMON_CLASSPATH, to set the classpath for all daemons
+# - SPARK_PUBLIC_DNS, to set the public dns name of the master or workers
+
+# Options for launcher
+# - SPARK_LAUNCHER_OPTS, to set config properties and Java options for the launcher (e.g. "-Dx=y")
+
+# Generic options for the daemons used in the standalone deploy mode
+# - SPARK_CONF_DIR      Alternate conf dir. (Default: ${SPARK_HOME}/conf)
+# - SPARK_LOG_DIR       Where log files are stored.  (Default: ${SPARK_HOME}/logs)
+# - SPARK_LOG_MAX_FILES Max log files of Spark daemons can rotate to. Default is 5.
+# - SPARK_PID_DIR       Where the pid file is stored. (Default: /tmp)
+# - SPARK_IDENT_STRING  A string representing this instance of spark. (Default: $USER)
+# - SPARK_NICENESS      The scheduling priority for daemons. (Default: 0)
+# - SPARK_NO_DAEMONIZE  Run the proposed command in the foreground. It will not output a PID file.
+# Options for native BLAS, like Intel MKL, OpenBLAS, and so on.
+# You might get better performance to enable these options if using native BLAS (see SPARK-21305).
+# - MKL_NUM_THREADS=1        Disable multi-threading of Intel MKL
+# - OPENBLAS_NUM_THREADS=1   Disable multi-threading of OpenBLAS
+# 这里我就配置了master的信息，worker使用默认的
+SPARK_MASTER_HOST=spark-standalone1
+SPARK_MASTER_PORT=7077
+SPARK_MASTER_WEBUI_PORT=8080
+```
+
+conf/workers文件
+
+```shell
+[vagrant@spark-standalone1 conf]$ cat workers 
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# A Spark Worker will be started on each of the machines listed below.
+spark-standalone3
+spark-standalone4
+```
+
+**特别注意**，这两个文件要同步到所有节点。
+
+**启动集群**，执行sbin/start-all.sh
+
+```shell
+[vagrant@spark-standalone1 spark-standalone]$ sbin/start-all.sh 
+starting org.apache.spark.deploy.master.Master, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.master.Master-1-spark-standalone1.out
+spark-standalone3: starting org.apache.spark.deploy.worker.Worker, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.worker.Worker-1-spark-standalone3.out
+spark-standalone4: starting org.apache.spark.deploy.worker.Worker, logging to /home/vagrant/spark-standalone/logs/spark-vagrant-org.apache.spark.deploy.worker.Worker-1-spark-standalone4.out
+```
+
+从日志上看一个主（spark-standalone1）,两个从（spark-standalone3和spark-standalone4）都已经启动，查看下UI看看是否启动成功。
+
+![image-20220903220549261](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209032205543.png)
+
+没有问题！
+
+### 提交应用
+
+使用spark-submit脚本提交应用
+
+```shell
+[vagrant@spark-standalone1 spark-standalone]$ bin/spark-submit --class org.apache.spark.examples.SparkPi --master spark://spark-standalone1:7077 ./examples/jars/spark-examples_2.12-3.3.0.jar 10
+22/09/03 14:09:47 INFO SparkContext: Running Spark version 3.3.0
+22/09/03 14:09:47 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+22/09/03 14:09:47 INFO ResourceUtils: ==============================================================
+22/09/03 14:09:47 INFO ResourceUtils: No custom resources configured for spark.driver.
+22/09/03 14:09:47 INFO ResourceUtils: ==============================================================
+22/09/03 14:09:47 INFO SparkContext: Submitted application: Spark Pi
+22/09/03 14:09:47 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+22/09/03 14:09:48 INFO ResourceProfile: Limiting resource is cpu
+-----------省略一部分日志-------------
+```
+
+再次查看WebUI
+
+![image-20220903221049928](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209032210162.png)
+
+Good！！！
