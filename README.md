@@ -1143,17 +1143,17 @@ SPARK_HISTORY_OPTS="-Dspark.history.retainedApplications=3
 
 上面图中都代表什么意思？我先放一张官网的集群词汇表
 
-| 术语            | 含义                                                         |
-| :-------------- | :----------------------------------------------------------- |
-| Application     | 基于 Spark 构建的用户程序。包括集群上的Driver和Executors。   |
-| Application jar | 包含用户程序的Jar包，在某些情况下，用户会希望创建一个超级Jar，其中包含应用程序和依赖项，用户的程序不应该包含Hadoop或者Spark的依赖，这些Jar应该在Spark运行时内，放到Spark的安装目录下的jars文件夹下，默认就有很多Jar。 |
-| Driver program  | 运行应用程序的 main() 函数并创建 SparkContext 的进程         |
-| Cluster manager | 用于获取集群上资源的外部服务（例如standalone manager、Mesos、YARN、Kubernetes）。 |
-| Deploy mode     | 区分Driver运行在哪里的标志，如果模式是“cluster”，框架在集群内部启动Driver，如果是“client”提交者在集群外部启动Driver。 |
-| Worker node     | 可以在集群中运行应用程序代码的任何节点，Executor就在工作节点上。 |
-| Executor        | 为工作节点上的Application启动的进程，它运行Task并将数据保存在内存或磁盘存储中。每个Application都有自己的Executors。 |
-| Task            | 发送个Executor的工作单元                                     |
-| Job             | 由多个Task组成的过个并行计算，这些Task响应Spark的Action（一种算子，Spark中有两种算子，另一种是Transform），Driver的日志能看到Job的相关日志信息 |
+| 术语            | 含义                                                                                                                                                                                                                    |
+| :-------------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Application     | 基于 Spark 构建的用户程序。包括集群上的Driver和Executors。                                                                                                                                                                              |
+| Application jar | 包含用户程序的Jar包，在某些情况下，用户会希望创建一个超级Jar，其中包含应用程序和依赖项，用户的程序不应该包含Hadoop或者Spark的依赖，这些Jar应该在Spark运行时内，放到Spark的安装目录下的jars文件夹下，默认就有很多Jar。                                                                                         |
+| Driver program  | 运行应用程序的 main() 函数并创建 SparkContext 的进程                                                                                                                                                                                 |
+| Cluster manager | 用于获取集群上资源的外部服务（例如standalone manager、Mesos、YARN、Kubernetes）。                                                                                                                                                           |
+| Deploy mode     | 区分Driver运行在哪里的标志，如果模式是“cluster”，框架在集群内部启动Driver，如果是“client”提交者在集群外部启动Driver。                                                                                                                                          |
+| Worker node     | 可以在集群中运行应用程序代码的任何节点，Executor就在工作节点上。                                                                                                                                                                                  |
+| Executor        | 为工作节点上的Application启动的进程，它运行Task并将数据保存在内存或磁盘存储中。每个Application都有自己的Executors。                                                                                                                                           |
+| Task            | 发送给Executor的工作单元                                                                                                                                                                                                      |
+| Job             | 由多个Task组成的过个并行计算，这些Task响应Spark的Action（一种算子，Spark中有两种算子，另一种是Transform），Driver的日志能看到Job的相关日志信息                                                                                                                          |
 | Stage           | 每一个Job都会被分割为更小的Task集合，Each job gets divided into smaller sets of tasks called *stages* that depend on each other (similar to the map and reduce stages in MapReduce); you'll see this term used in the driver's logs. |
 
 
