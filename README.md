@@ -655,8 +655,6 @@ EOF
 sudo yum install java-1.8.0-openjdk* -y
 ```
 
-
-
 ### 搭建(手动)
 
 手动搭建使用sbin目录下的start-master.sh、stop-master.sh、start-worker.sh、stop-worker.sh这几个文件。
@@ -958,3 +956,220 @@ spark-standalone4: starting org.apache.spark.deploy.worker.Worker, logging to /h
 ![image-20220903221049928](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209032210162.png)
 
 Good！！！
+
+### 历史服务
+
+Spark有WebUI监控，但是一旦重启服务器，历史就会丢失，Spark提供历史服务，需要将数据保存到本地文件或者HDFS（Hadoop 分布式文件系统）中。
+
+HDFS搭建这里我就不演示了，自行查看[Hadoop官网]( https://hadoop.apache.org/)文档搭建。
+
+配置conf/spark-defaults.conf文件
+
+```text
+[vagrant@spark-standalone1 conf]$ cat spark-defaults.conf
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Default system properties included when running spark-submit.
+# This is useful for setting default environmental settings.
+
+# Example:
+spark.master                     spark://spark-standalone1:7077
+spark.eventLog.enabled           true
+spark.eventLog.dir               hdfs://spark-standalone1:9000/spark-events
+# spark.serializer                 org.apache.spark.serializer.KryoSerializer
+# spark.driver.memory              5g
+# spark.executor.extraJavaOptions  -XX:+PrintGCDetails -Dkey=value -Dnumbers="one two three
+```
+
+主要修改了一下三处
+
+```text
+spark.master                     spark://spark-standalone1:7077
+spark.eventLog.enabled           true
+spark.eventLog.dir               hdfs://spark-standalone1:9000/spark-events
+```
+
+然后修改conf/spark-env.sh
+
+```
+[vagrant@spark-standalone1 conf]$ cat spark-env.sh 
+#!/usr/bin/env bash
+
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# This file is sourced when running various Spark programs.
+# Copy it as spark-env.sh and edit that to configure Spark for your site.
+
+# Options read when launching programs locally with
+# ./bin/run-example or ./bin/spark-submit
+# - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
+# - SPARK_LOCAL_IP, to set the IP address Spark binds to on this node
+# - SPARK_PUBLIC_DNS, to set the public dns name of the driver program
+
+# Options read by executors and drivers running inside the cluster
+# - SPARK_LOCAL_IP, to set the IP address Spark binds to on this node
+# - SPARK_PUBLIC_DNS, to set the public DNS name of the driver program
+# - SPARK_LOCAL_DIRS, storage directories to use on this node for shuffle and RDD data
+# - MESOS_NATIVE_JAVA_LIBRARY, to point to your libmesos.so if you use Mesos
+
+# Options read in any mode
+# - SPARK_CONF_DIR, Alternate conf dir. (Default: ${SPARK_HOME}/conf)
+# - SPARK_EXECUTOR_CORES, Number of cores for the executors (Default: 1).
+# - SPARK_EXECUTOR_MEMORY, Memory per Executor (e.g. 1000M, 2G) (Default: 1G)
+# - SPARK_DRIVER_MEMORY, Memory for Driver (e.g. 1000M, 2G) (Default: 1G)
+
+# Options read in any cluster manager using HDFS
+# - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
+
+# Options read in YARN client/cluster mode
+# - YARN_CONF_DIR, to point Spark towards YARN configuration files when you use YARN
+
+# Options for the daemons used in the standalone deploy mode
+# - SPARK_MASTER_HOST, to bind the master to a different IP address or hostname
+# - SPARK_MASTER_PORT / SPARK_MASTER_WEBUI_PORT, to use non-default ports for the master
+# - SPARK_MASTER_OPTS, to set config properties only for the master (e.g. "-Dx=y")
+# - SPARK_WORKER_CORES, to set the number of cores to use on this machine
+# - SPARK_WORKER_MEMORY, to set how much total memory workers have to give executors (e.g. 1000m, 2g)
+# - SPARK_WORKER_PORT / SPARK_WORKER_WEBUI_PORT, to use non-default ports for the worker
+# - SPARK_WORKER_DIR, to set the working directory of worker processes
+# - SPARK_WORKER_OPTS, to set config properties only for the worker (e.g. "-Dx=y")
+# - SPARK_DAEMON_MEMORY, to allocate to the master, worker and history server themselves (default: 1g).
+# - SPARK_HISTORY_OPTS, to set config properties only for the history server (e.g. "-Dx=y")
+# - SPARK_SHUFFLE_OPTS, to set config properties only for the external shuffle service (e.g. "-Dx=y")
+# - SPARK_DAEMON_JAVA_OPTS, to set config properties for all daemons (e.g. "-Dx=y")
+# - SPARK_DAEMON_CLASSPATH, to set the classpath for all daemons
+# - SPARK_PUBLIC_DNS, to set the public dns name of the master or workers
+
+# Options for launcher
+# - SPARK_LAUNCHER_OPTS, to set config properties and Java options for the launcher (e.g. "-Dx=y")
+
+# Generic options for the daemons used in the standalone deploy mode
+# - SPARK_CONF_DIR      Alternate conf dir. (Default: ${SPARK_HOME}/conf)
+# - SPARK_LOG_DIR       Where log files are stored.  (Default: ${SPARK_HOME}/logs)
+# - SPARK_LOG_MAX_FILES Max log files of Spark daemons can rotate to. Default is 5.
+# - SPARK_PID_DIR       Where the pid file is stored. (Default: /tmp)
+# - SPARK_IDENT_STRING  A string representing this instance of spark. (Default: $USER)
+# - SPARK_NICENESS      The scheduling priority for daemons. (Default: 0)
+# - SPARK_NO_DAEMONIZE  Run the proposed command in the foreground. It will not output a PID file.
+# Options for native BLAS, like Intel MKL, OpenBLAS, and so on.
+# You might get better performance to enable these options if using native BLAS (see SPARK-21305).
+# - MKL_NUM_THREADS=1        Disable multi-threading of Intel MKL
+# - OPENBLAS_NUM_THREADS=1   Disable multi-threading of OpenBLAS
+SPARK_MASTER_HOST=spark-standalone1
+SPARK_MASTER_PORT=7077
+SPARK_MASTER_WEBUI_PORT=8080
+SPARK_HISTORY_OPTS="-Dspark.history.retainedApplications=3 
+-Dspark.history.fs.logDirectory=hdfs://spark-standalone1:9000/spark-events"
+```
+
+增加了如下配置（历史服务）
+
+```text
+SPARK_HISTORY_OPTS="-Dspark.history.retainedApplications=3
+-Dspark.history.fs.logDirectory=hdfs://spark-standalone1:9000/spark-events"
+```
+
+历史服务默认请求地址是：http://spark-standalone1:18080
+
+![image-20220905103140306](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209051031707.png)
+
+此时历史服务里没有记录，我来提交一个应用
+
+```shell
+[vagrant@spark-standalone1 spark-standalone]$ bin/spark-submit --class org.apache.spark.examples.SparkPi --master spark://spark-standalone1:7077 ./examples/jars/spark-examples_2.12-3.3.0.jar 10
+```
+
+重新查看历史服务
+
+![image-20220905105303338](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209051053652.png)
+
+可以查看到刚刚提交的spark记录。
+
+查看下Hadoop hdfs的页面
+
+![image-20220905105613132](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209051056262.png)
+
+### 高可用
+
+高可用模式之后单独出一篇文章。
+
+## YARN模式
+
+之后学习再更新一个单独章节
+
+## Kubernetes模式
+
+之后学习再更新一个单独章节。
+
+
+
+# Spark运行架构
+
+本章介绍下Spark的组件以及运行方式等信息，该篇特别重要，无论学习什么技术，了解其底层原理都是非常重要的。
+
+![Spark 集群组件](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209041819018.png)
+
+上图就是Spark运行时的基本结构。
+
+上面图中都代表什么意思？我先放一张官网的集群词汇表
+
+| 术语            | 含义                                                         |
+| :-------------- | :----------------------------------------------------------- |
+| Application     | 基于 Spark 构建的用户程序。包括集群上的Driver和Executors。   |
+| Application jar | 包含用户程序的Jar包，在某些情况下，用户会希望创建一个超级Jar，其中包含应用程序和依赖项，用户的程序不应该包含Hadoop或者Spark的依赖，这些Jar应该在Spark运行时内，放到Spark的安装目录下的jars文件夹下，默认就有很多Jar。 |
+| Driver program  | 运行应用程序的 main() 函数并创建 SparkContext 的进程         |
+| Cluster manager | 用于获取集群上资源的外部服务（例如standalone manager、Mesos、YARN、Kubernetes）。 |
+| Deploy mode     | 区分Driver运行在哪里的标志，如果模式是“cluster”，框架在集群内部启动Driver，如果是“client”提交者在集群外部启动Driver。 |
+| Worker node     | 可以在集群中运行应用程序代码的任何节点，Executor就在工作节点上。 |
+| Executor        | 为工作节点上的Application启动的进程，它运行Task并将数据保存在内存或磁盘存储中。每个Application都有自己的Executors。 |
+| Task            | 发送个Executor的工作单元                                     |
+| Job             | 由多个Task组成的过个并行计算，这些Task响应Spark的Action（一种算子，Spark中有两种算子，另一种是Transform），Driver的日志能看到Job的相关日志信息 |
+| Stage           | 每一个Job都会被分割为更小的Task集合，Each job gets divided into smaller sets of tasks called *stages* that depend on each other (similar to the map and reduce stages in MapReduce); you'll see this term used in the driver's logs. |
+
+
+
+## 核心组件
+
+Spark有两个核心组件
+
+### Driver
+
+Driver用于执行应用程序的main方法，他在作业执行的时候主要负责如下工作：
+
+将用户程序转化为Job
+
+在Executor之间调度任务
+
+跟踪Executor的执行情况
+
+通过WebUI查询运行情况
