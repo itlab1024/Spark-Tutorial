@@ -398,6 +398,7 @@ Spark的运行环境有开发环境、本地环境、独立环境（Standalone�
 * **Hadoop Yarn模式**：据说国内主流，咱也不清楚，生产可用。
 * **Kubernetes模式**：这个我觉得肯定是流行的，因为容器化现在非常流行，生产可用。
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209011528643.png)
+
 ## 开发环境
 没啥好说的
 ## 本地模式(单机)
@@ -1160,16 +1161,156 @@ SPARK_HISTORY_OPTS="-Dspark.history.retainedApplications=3
 
 ## 核心组件
 
-Spark有两个核心组件
+Spark有两个核心组件，Driver和Executor
 
 ### Driver
 
 Driver用于执行应用程序的main方法，他在作业执行的时候主要负责如下工作：
 
-将用户程序转化为Job
+* 将用户程序转化为Job
 
-在Executor之间调度任务
+* 在Executor之间调度任务
 
-跟踪Executor的执行情况
+* 跟踪Executor的执行情况
 
-通过WebUI查询运行情况
+* 通过WebUI查询运行情况
+
+Driver默认运行在提交任务的机器上（因为提交任务默认方式（deploy-mode）使用的是客户端模式(client)），如果是集群模式（cluster），则集群管理器会随机选择一个worker启动Driver，之前我提交应用的方式因为没有指定deploy-mode参数，所以使用默认client模式。
+
+### Executor
+
+Executor也是一个进程，他运行在Worker节点，负责执行Spark的任务，将结果返回给Driver，同时他也提供为需要缓存的RDD提供内存存储。
+
+
+
+## 提交任务流程
+
+任务提交使用Spark目录下的bin/spark-submit执行，他有很多参数可以执行，如下表
+
+| 参数                     | 解释                                                         | 可选值举例                                                |
+| ------------------------ | ------------------------------------------------------------ | --------------------------------------------------------- |
+| --class                  | Spark程序中包含主函数的类完全名                              | --class org.apache.spark.examples.SparkPi                 |
+| --master                 | Spark程序运行的模式                                          | 本地模式：local[*]、spark://spark-standalone1:7077 、Yarn |
+| --deploy-mode            | 提交应用模式，client和cluster，默认是client，client模式主要用于开发和测试，生产环境必须使用cluster |                                                           |
+| --executor-memory 1G     | 指定每个executor可用内存为1G                                 | 符合集群内存配置即可，具体情况具体分析。                  |
+| --total-executor-cores 2 | 指定所有executor使用的cpu核数为2个                           |                                                           |
+| application-jar          | 打包好的应用jar，包含依赖。这个URL在集群中全局可见。 比如hdfs:// 共享存储系统，如果是file:// path，那么所有的节点的path都包含同样的jar |                                                           |
+| application-arguments    | 传给main()方法的参数                                         |                                                           |
+
+接下来我主要介绍下客户端模式和集群模式下任务提交的流程。
+
+### 客户端模式
+
+这是默认的模式，借用一张网络图来说明提交流程。
+
+![img](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209081603802.png)
+
+用户在本地机器上执行bin/submit脚本后，会在本机上启动一个JVM进程，就是Driver，Driver解析（转化为Job等）应用后将其注册到master，Master根据资源的需求获取worker资源（启动Executor进程），然后Executor会反向注册给Driver，之后Driver会将Task分配给具体的Executor执行，执行完毕后后Executor会将结果反馈给Driver。
+
+### 集群模式
+
+![img](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209081600166.jpeg)
+
+集群模式提交流程跟客户端模式是类似的，不同的是Driver的执行地点，客户端是在提交应用的那个机器上启动Driver，集群模式下，是Master随机找一个Worker运行Driver。其他没有什么区别。
+
+
+
+这样做的目的无非就是在提交任务多的时候，通过多worker的特点将压力减小。试想客户端模式下，如果任务过多，就会启动很多进程，这无疑会增加计算机的负担。
+
+
+
+# 核心编程RDD
+
+RDD（Resilient Distributed Datasets）：弹性分布式数据集，他永远是一个集合，他是Spark的核心部分，Spark-SQL等上层架构都是基于RDD来实现的。
+
+RDD数据是分布式存储的，也就是按照不同的分区存储。可以根据内置的方法自由扩展分区或者缩小分区（看实际业务情况）。
+
+## 初识算子
+
+RDD有很多方法，这些方法叫做算子，算子主要分为两种，一种是转换（Transformations），一种是动作(Action)。
+
+转换算子主要用于定义RDD处理流程，比如map，flatMap等等。
+
+动作算子用于触发执行，因为Spark中的任务执行是惰性的，只有触发动作算子的时候才会真正的计算，比如
+
+reduceByKey等等。
+
+## DAG（Directed Acyclic Graph）有向无环图
+
+顾名思义就是一个有方向的但是不能形成闭环的图，这就是说RDD所有的算子都遵循这样的规范。
+
+我打算使用之前的wordcount例子来具体讲解下DAG
+
+为了方便，我先试用spark执行wordCount代码。
+
+```shell
+itlab@itlab1024com ~/dev-tools/spark-3.3.0-bin-hadoop3$ bin/spark-shell        
+22/09/08 16:32:08 WARN Utils: Your hostname, itlab1024com.local resolves to a loopback address: 127.0.0.1; using 10.112.82.59 instead (on interface en0)
+22/09/08 16:32:08 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+22/09/08 16:32:16 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Spark context Web UI available at http://10.112.82.59:4040
+Spark context available as 'sc' (master = local[*], app id = local-1662625937869).
+Spark session available as 'spark'.
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.3.0
+      /_/
+         
+Using Scala version 2.12.15 (Java HotSpot(TM) 64-Bit Server VM, Java 17.0.3.1)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala>     //1. 将文件中的数据读入到内存，结果是一行一行的。
+
+scala>     val rdd = sc.textFile("files/wordCount.txt")
+rdd: org.apache.spark.rdd.RDD[String] = files/wordCount.txt MapPartitionsRDD[1] at textFile at <console>:23
+
+scala>     //2. 将每行通过空格切分
+
+scala>     val flatRDD = rdd.flatMap(_.split(" "))
+flatRDD: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[2] at flatMap at <console>:23
+
+scala>     //3. 转化为元组，比如(K,V)，K代表单词，V代表单词的数量（写死1）
+
+scala>     val tupleRDD = flatRDD.map((_, 1))
+tupleRDD: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[3] at map at <console>:23
+
+scala>     //4. 然后通过K聚合将所有V加起
+
+scala>     val result = tupleRDD.reduceByKey(_ + _)
+result: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[4] at reduceByKey at <console>:23
+
+scala>     // 打印
+
+scala>     result.collect().foreach(println)
+(scala,1)
+(learning,4)
+(am,4)
+(java,1)
+(go,1)
+(spark,1)
+(I,4)
+```
+
+然后打开WebUI。
+
+![image-20220908163421293](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209081634639.png)
+
+进入后再点击
+
+![image-20220908163509088](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209081635258.png)
+
+这个图就是DAG。
+
+看到这就会有很多疑问，图1中的job是什么意思？有job0，会有job1吗？图2为什么是这样的？stage是什么？如何划分的？Task是如何划分的。
+
+Spark对应用进行处理，可以分解为多个Job，依据主要是根据Action算子，遇到Action算子就会拆解为job，而每一个Job中如果遇到Shuffle算子（洗牌算子，数据会重新分区），就会拆解为stage，spark会将某个或者某些算子放到一起组装为一个Task（Spark自身有优化，会将某些算子放到一起，拆分规则我暂时不清楚），最终的task会发送到Executer执行，Task也是Spark的最小执行单元。
+
+
+
+
+
