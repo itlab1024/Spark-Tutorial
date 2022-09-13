@@ -1529,3 +1529,37 @@ object FlatMapOperator {
 ```
 
 ![image-20220913164930176](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131649454.png)
+
+### mapPartition
+
+功能类似于map，但两者是有区别的，请看如下说明：
+
+* map主要是用于数据的转换，数据数量不会变化，而mapPartition的参数是一个迭代器，可以实现数据量的减少或者增加。
+
+* map每次处理一条数据，而mapPartition：每次处理一个分区的数据，这个分区的数据处理完后，原RDD中分区的数据才能释放，可能导致OOM。
+
+* 当内存空间较大的时候建议使用mapPartition，以提高处理效率。
+
+示例：
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+object MapPartitionOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6))
+    val r = intRDD.mapPartitions(datas => datas)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220913182156452](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131821550.png)

@@ -9,7 +9,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object FlatMapOperator {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     val intRDD = sc.makeRDD(Array(List(1, 2), List(3, 4)))
