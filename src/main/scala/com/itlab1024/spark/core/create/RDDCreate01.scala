@@ -1,6 +1,5 @@
-package com.itlab1024.spark.core
+package com.itlab1024.spark.core.create
 
-import org.apache.logging.slf4j.Log4jLoggerFactory
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**

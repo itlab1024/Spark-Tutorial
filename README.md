@@ -1426,3 +1426,106 @@ value.foreach(println)
 ```
 
 ![image-20220913161907868](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131619130.png)
+
+## 算子
+
+前面已经简单介绍过算子，这里我要一个一个具体学习每一个算子的含义以及如何使用。
+
+### map
+
+Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD，不同于scala基本map之处在于，spark中的map是并行计算的。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ *
+ * @author itlab
+ */
+object MapOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6))
+    val r = intRDD.map(_ - 1) // 将RDD中每个值减1
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220913163720751](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131637901.png)
+
+map的并行计算，请注意下图中setMaster处的修改。
+
+![image-20220913173723422](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131737513.png)
+
+可以看到并非按照数据顺序一步一步的执行，执行顺序是不确定的。
+
+### filter
+
+过滤器，通过条件（返回boolean类型）返回结果是true的元素组成的新的RDD
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ *
+ * @author itlab
+ */
+object FilterOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6))
+    val r = intRDD.filter(_ > 3) // 只要大于3的的数据
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220913164103076](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131641202.png)
+
+### flatMap
+
+flatMap功能跟map类似，不同之处在于flat，平铺开，他会将集合中的数据全部展开。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ * @author itlab
+ */
+object FlatMapOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(Array(List(1, 2), List(3, 4)))
+    val r = intRDD.flatMap(data => data) // 将RDD展开，数值原样输出
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220913164930176](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131649454.png)
