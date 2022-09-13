@@ -7,6 +7,7 @@
 ![](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202208312008157.png)
 Spark 是Apache基金会开发的用于大数据处理的统一分析引擎。它提供 Java、Scala、Python 和 R 语言中的高级 API，
 还有机器学习、图形处理等（这两个我目前用不到，先不学了。）
+
 # 下载安装
 目前最新版本是3.3.0。我就是用这个版本进行学习了。
 打开[Spark下载地址](https://spark.apache.org/downloads.html)
@@ -1219,7 +1220,7 @@ Executor也是一个进程，他运行在Worker节点，负责执行Spark的任�
 
 
 
-# 核心编程RDD
+# 核心编程
 
 RDD（Resilient Distributed Datasets）：弹性分布式数据集，他永远是一个集合，他是Spark的核心部分，Spark-SQL等上层架构都是基于RDD来实现的。
 
@@ -1310,7 +1311,118 @@ scala>     result.collect().foreach(println)
 
 Spark对应用进行处理，可以分解为多个Job，依据主要是根据Action算子，遇到Action算子就会拆解为job，而每一个Job中如果遇到Shuffle算子（洗牌算子，数据会重新分区），就会拆解为stage，spark会将某个或者某些算子放到一起组装为一个Task（Spark自身有优化，会将某些算子放到一起，拆分规则我暂时不清楚），最终的task会发送到Executer执行，Task也是Spark的最小执行单元。
 
+## 创建RDD
 
+RDD的创建方式有很多
 
+* 通过集合创建
+* 通过外部数据源创建
 
+### 通过集合创建
 
+Spark支持在内存中通过集合创建RDD可以通过parallelize和makeRDD方法，这两个方法是完全一样的，因为makeRDD底层调用的就是parallelize。推荐使用makeRDD，这个名字容易理解。
+
+```scala
+package com.itlab1024.spark.core
+
+import org.apache.logging.slf4j.Log4jLoggerFactory
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * 创建RDD
+ *
+ * @author itlab1024
+ */
+object RDDCreate01 {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val sc = new SparkContext(conf)
+
+    // 准备内存Seq数据
+    val list = List(1, 2, 3, 4)
+    // 通过parallelize方法
+    val intRDD = sc.parallelize(list)
+    intRDD.foreach(println)
+    // 通过makeRDD方法
+    val intRDD2 = sc.makeRDD(list)
+    intRDD2.foreach(println)
+
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+这两个方法除了第一个Seq类型的参数外，还有第二个参数numSlices，并行度的概念，意思是讲集合分配到几个分区，来测试下。
+
+测试分区需要使用一个输出方法，将其保存到分区文件中，更能直观的展示。
+
+```scala
+//使用saveAsTextFile将数据以文件的形式保存到不同分区，放到项目下的partitions文件夹下
+val intRDD3 = sc.makeRDD(list, 2)
+intRDD3.saveAsTextFile("partitions")
+```
+
+查看partitions文件夹，可以看到两个分区文件，并且数据已经放入文件中。
+
+![image-20220908201132328](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209082011590.png)
+
+两个分区，[1 2]被放到了第一个分区，[3 4]被放到了第二个分区。
+
+### 通过外部数据源创建RDD
+
+Spark支持本地文件系统、Hadoop支持的数据集（比如HDFS、Hbase等）来创建RDD，这里有基础特别需要注意的地方
+
+* 使用本地文件系统路径，必须能够在每一个worker上都能访问到文件，否则就找不到文件无法完成任务
+* 支持目录，压缩文件和通配符方式，比如 textFile("/my/directory")， textFile("/my/directory/*.txt")和textFile("/my/directory/*.gz")等，多个文件时分区顺序无法保证，取决于文件系统返回的顺序。
+* 特别注意文件系统方式，文件要求必须是UTF-8编码，否则读取出来的会有乱码。
+
+**读取目录**
+
+```scala
+val value: RDD[String] = sc.textFile("files")
+value.foreach(println)
+```
+
+上面代码会读取files文件下的所有文件。
+
+**读取压缩文件**
+
+spark支持读取使用tar指令打包的压缩包，zip的压缩包无法读取。
+
+```scala
+val value: RDD[String] = sc.textFile("files/tarfile.tar.gz")
+value.foreach(println)
+```
+
+如果是zip的压缩包，读取不出来，会出现乱码，是否有解决方法，暂不知晓。
+
+![image-20220913144501263](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131445546.png)
+
+**读取HDFS文件**
+
+```scala
+val value: RDD[String] = sc.textFile("hdfs://spark-standalone1:9000/wordCount.txt")
+value.foreach(println)
+```
+
+hdfs端口，根据自己设置的配置，我配置的是9000
+
+```xml
+<property>
+  <name>fs.defaultFS</name>
+  <value>hdfs://spark-standalone1:9000</value>
+</property>
+```
+
+**wholeTextFiles方法**
+
+跟上面类似也是读取本地文件系统或者HDFS，不同的是他会生成一个kv元组的RDD
+
+```scala
+val value: RDD[(String, String)] = sc.wholeTextFiles("files")
+value.foreach(println)
+```
+
+![image-20220913161907868](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131619130.png)
