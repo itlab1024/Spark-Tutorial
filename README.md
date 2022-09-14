@@ -1563,3 +1563,40 @@ object MapPartitionOperator {
 ```
 
 ![image-20220913182156452](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131821550.png)
+
+### mapPartitionsWithIndex
+
+功能类似mapPartitions，不同之处是可以获得分区的索引。
+
+![image-20220913184350438](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131843562.png)
+
+### glom
+
+glom算子是将每个分区的数据组装为一个数组形成的RDD
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+object GlomOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3, 4, 5, 6), 2)
+    val rdd1: RDD[Array[Int]] = rdd.glom()
+    rdd1.foreach(x=>x.foreach(println)) // 这里为什么是两次循环，就是因为glom会将每个分区的数据组装为一个Array，再形成一个RDD
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+上面代码中，初始RDD是Int类型的，使用glom返回的是RDD[Array[Int]]，这就是将每个分区的数据组装为Array，然后形成一个RDD，1,2,3在第一个分区，组成Array[1,2,3]，同理，第二个分区的组装为Array[4,5,6]数组，这两个数组再形成一个RDD。
+
+![image-20220913201747245](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209132017427.png)
+
+上图中要用两个循环，第一个循环式循环RDD，第二个是循环Array。
