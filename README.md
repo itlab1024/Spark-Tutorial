@@ -1572,7 +1572,7 @@ object MapPartitionOperator {
 
 ### glom
 
-glom算子是将每个分区的数据组装为一个数组形成的RDD
+glom算子是将每个分区的数据组装为一个数组形成的RDD，分区数目保持不变。
 
 ```scala
 package com.itlab1024.spark.core.operations
@@ -1600,3 +1600,118 @@ object GlomOperator {
 ![image-20220913201747245](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209132017427.png)
 
 上图中要用两个循环，第一个循环式循环RDD，第二个是循环Array。
+
+### groupBy
+
+分组，通过条件进行分组，func的返回值就是key，分组操作不会导致分区数的变化，但是会导致数据被打乱重新组合，这也叫做洗牌（shuffle）。这可能会导致某个分区数据量激增，压力增大，这也叫做数据倾斜。数据清洗是优化计算的一个关注点，以后再慢慢学习优化。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ *
+ * @author itlab
+ */
+object GroupByOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6), 2)
+    val r = intRDD.groupBy(_ % 2 == 0)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+请看上面代码中，功能时间元素能够被2整除的放到一起，不能被整除的放到一起，分组的key只有true和false。
+
+假设RDD中的元素都是偶数，那么数据groupBy结果都是true的值，导致所有数据重新组合到了一起，就产生了数据倾斜。
+
+运行结果如下：
+
+![image-20220914101402949](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141014125.png)
+
+### sample
+
+顾名思义，样本，用于数据取样，该算子主要分为抽取数据是否放回，不放回的情况使用的是伯努利算法，放回使用的是泊松分布算法，实际开发中主要用于发现倾斜数据解决数据倾斜、预估内存等。
+
+该算子有三个参数，
+
+* withReplacement：代表元素是否可以多次采样，true代表已经抽取的数据放回，false代表不放回
+* fraction：代表每条数据抽取的概率，这里根据是否放回情况不同，如果是放回，则表示重复数据的几率，范围大于等于 0.表示每一个元素被期望抽取到的次数，如果是不放回抽取，该参数代表抽取的几率，范围在[0,1]之间,0：全不取；1：全取；
+* seed 抽取数据时，随机算法的种子，如果不传递，默认使用的是当前系统时间。
+
+示例：
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ *
+ * @author itlab
+ */
+object SampleOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6), 2)
+    val r = intRDD.sample(withReplacement = false, 0.5)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+上面的代码中，使用的是不放回抽取方式，那么第二个参数（上面代码是0.5）就代表每个元素被期望抽取的次数。
+
+![image-20220914103834179](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141038347.png)
+
+![image-20220914103909263](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141039407.png)
+
+上面两个图是我执行两次的结果，结果并不同，抽样本身就是一个不确定返回值的东西。
+
+### distinct
+
+该算子用于对数据去重，该算子支持一个可选参数分区数量numPartitions，需要注意的是，如果不传递参数，那么数据分区不变，如果传递了该参数，数据会重新分区，也就是shuffle（底层会使用reduceBykey算子）。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ *
+ * @author itlab
+ */
+object DistinctOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 1, 3, 3, 5, 6), 2)
+    val r = intRDD.distinct()
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+上面代码中我使用的是没有传递分区数参数，运行结果如下：
+
+![image-20220914104155259](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141041435.png)
