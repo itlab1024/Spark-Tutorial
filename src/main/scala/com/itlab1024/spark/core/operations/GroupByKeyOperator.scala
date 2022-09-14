@@ -14,7 +14,7 @@ object GroupByKeyOperator {
     val sc = new SparkContext(conf)
 
     val rdd = sc.makeRDD(List((1, "a"), (1, "b"), (3, "c")))
-    val r = rdd.groupBy(_._1) // 通过元组的第一个元组分组
+    val r = rdd.groupByKey(1) // 通过元组的第一个元组分组
     r.foreach(println) // [(3,CompactBuffer((3,c))) (1, CompactBuffer((1, a), (1, b)))]
     // 关闭连接
     sc.stop()
