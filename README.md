@@ -1990,7 +1990,7 @@ object PartitionByOperator {
 
 对RDD相同的key实现value的聚合，也是要求RDD类型是键值对。
 
-```
+```scala
 package com.itlab1024.spark.core.operations
 
 import org.apache.spark.rdd.RDD
