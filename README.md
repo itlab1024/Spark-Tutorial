@@ -1442,7 +1442,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ * 
  *
  * @author itlab
  */
@@ -1479,7 +1479,7 @@ package com.itlab1024.spark.core.operations
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ * 
  *
  * @author itlab
  */
@@ -1611,7 +1611,7 @@ package com.itlab1024.spark.core.operations
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ * 
  *
  * @author itlab
  */
@@ -1656,7 +1656,7 @@ package com.itlab1024.spark.core.operations
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ * 
  *
  * @author itlab
  */
@@ -1685,7 +1685,7 @@ object SampleOperator {
 
 ### distinct
 
-该算子用于对数据去重，该算子支持一个可选参数分区数量numPartitions，需要注意的是，如果不传递参数，那么数据分区不变，如果传递了该参数，数据会重新分区，也就是shuffle（底层会使用reduceBykey算子）。
+该算子用于对数据去重，该算子支持一个可选参数分区数量numPartitions，需要注意的是，该算子会导致数据会重新分区，也就是shuffle（底层会使用reduceBykey算子）。
 
 ```scala
 package com.itlab1024.spark.core.operations
@@ -1693,7 +1693,7 @@ package com.itlab1024.spark.core.operations
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Map算子: Spark中的map和scala、java中的map基本相同，通过传入一个函数，将值转化为另外一种结果，形成一种新的RDD
+ * 
  *
  * @author itlab
  */
@@ -1715,3 +1715,74 @@ object DistinctOperator {
 上面代码中我使用的是没有传递分区数参数，运行结果如下：
 
 ![image-20220914104155259](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141041435.png)
+
+### coalesce
+
+coaleasce是合并的意思，该算子是合并分区，根据数据量缩减分区，用于大数据集过滤后，提高小数据集的执行效率
+
+当 spark 程序中，存在过多的小任务的时候，可以通过 coalesce 方法，收缩合并分区，减少
+
+分区的个数，减小任务调度成本。
+
+具体说明：假设之前RDD是x个分区，使用coalesce要分为y个分区
+
+1. x >= y：也就是说分区数目较少了，这时候会得到目标分区数y，是否洗牌取决于第二个参数shuffle。
+2. x < y：目标是想要实现分区数目增大，这种情况下可能会出现无法达到目标的情况，比如此时设置了第二个参数shuffle=false，则最终得到的分区数还是x。啥也没错。但是如果是shuffle=true则会打乱数据重新组合，得到y分区数。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ * @author itlab
+ */
+object CoalesceOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 1, 3, 3, 5, 6), 4)
+    //    val r = intRDD.distinct()
+    val r = intRDD.coalesce(2, shuffle = false) // 缩减分区数，但是不洗牌
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+通常缩减分区数的时候使用该算子。
+
+### repartition
+
+该算子是coalesce的缩小版功能，因为他其实就是调用了coalesce(numPartitions, shuffle = true)，并限定了shuffle=true。这个算子一定有洗牌操作。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object RepartitionOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 1, 3, 3, 5, 6), 3)
+    intRDD.saveAsTextFile("output1")
+    val r = intRDD.repartition(4) // 增加分区数，洗牌
+    r.saveAsTextFile("output2")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
