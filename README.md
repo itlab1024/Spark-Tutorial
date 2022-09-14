@@ -1786,3 +1786,277 @@ object RepartitionOperator {
 }
 ```
 
+### sortBy
+
+排序功能， 有三个参数，第一个参数是一个函数，用于处理数据，第二个是排序方式，默认是true，升序，第三个参数是目标分区数，
+
+排序后新产生的 RDD 的分区数与原 RDD 的分区数一
+
+致。而且存在shuffle。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SortByOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val intRDD = sc.makeRDD(List(1, 6, 3, 2, 5, 4, 100, 43), 3)
+    intRDD.saveAsTextFile("output1")
+    val r = intRDD.sortBy( _ - 1,true, 4)
+    r.saveAsTextFile("output2")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+运行结果说明：
+
+sortBy之前，有三个分区，数据分别是第1个分区数据是[1, 6]，第二个是[3, 2, 5], 第三个是[4, 100, 43]
+
+sourtBy时候，有四阿哥分区，第一个[1, 2]， 第二个[3, 4]， 第三个[5, 6]， 第四个[43, 100]
+
+上面的运行结果也说明了洗牌的存在。
+
+### intersection
+
+交集，要求两个集合类型必须一致。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object IntersectionOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(1 to 5, 2) // [1, 2, 3, 4, 5]
+    val rdd2 = sc.makeRDD(5 to 9, 3) // [5, 6, 7, 8, 9]
+    val rdd3 = rdd1.intersection(rdd2) // 交集是5
+    rdd3.foreach(println)// [5]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### union
+
+并集，会返回两个集合的组合，不会去重。也要求两个RDD类型一致。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object UnionOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(1 to 5, 2) // [1, 2, 3, 4, 5]
+    val rdd2 = sc.makeRDD(5 to 9, 3) // [5, 6, 7, 8, 9]
+    val rdd3 = rdd1.union(rdd2) // 并集是[1, 2, 3, 4, 5, 5, 6, 7, 8, 9]
+    rdd3.foreach(println)// [5]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### subtract
+
+求两个RDD的差集，获取RDD1中元素不存在于RDD2中的所有元素组成新的RDD
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SubtractOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(1 to 5, 2) // [1, 2, 3, 4, 5]
+    val rdd2 = sc.makeRDD(5 to 9, 3) // [5, 6, 7, 8, 9]
+    val rdd3 = rdd1.subtract(rdd2)
+    rdd3.foreach(println)// [1, 2, 3, 4]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### zip
+
+压缩功能，将两个RDD压缩为一个，该算子不要求两个RDD的类型一致，但是要求两个RDD的分区数一样，并且要求相同数目的分区元素。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object ZipOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(1 to 5, 3) // [1, 2, 3, 4, 5]
+    val rdd2 = sc.makeRDD(List("a", "b", "c", "d", "e"), 3) // [5, 6, 7, 8, 9]
+    val rdd3 = rdd1.zip(rdd2)
+    rdd3.foreach(println)// [1, 2, 3, 4]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220914144508321](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209141445426.png)
+
+### partitionBy
+
+通过分区key重新分区， 该算子是PairRDDFunctions下的方法，也就是说他是PairRDD的特有方法。需要一个HashPartitioner分区器
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object PartitionByOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd: RDD[(Int, String)] =
+      sc.makeRDD(List((1, "a"), (2, "b"), (3, "c")), 3)
+    rdd.saveAsTextFile("output1")
+    import org.apache.spark.HashPartitioner
+    val r: RDD[(Int, String)] =
+      rdd.partitionBy(new HashPartitioner(2))
+    r.saveAsTextFile("output2")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+请注意RDD的类型。
+
+### reduceByKey
+
+对RDD相同的key实现value的聚合，也是要求RDD类型是键值对。
+
+```
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object ReduceByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, "a"), (1, "b"), (3, "c")))
+    val r = rdd.reduceByKey(_ + _)
+    r.foreach(println) // [(1,ab),(3,c)]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### groupByKey
+
+只分组不聚合，这不同于上面说的reduceByKey，reduceByKey默认有分组操作，然后执行聚合，groupByKey没有聚合的含义，如果想实现reduceByKey一样的功能，还需要搭配聚合算子。相同的是两者都有shuffle。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object GroupByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, "a"), (1, "b"), (3, "c")))
+    val r = rdd.groupBy(_._1) // 通过元组的第一个元组分组
+    r.foreach(println) // [(3,CompactBuffer((3,c))) (1, CompactBuffer((1, a), (1, b)))]
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+两者具体区别（摘自尚硅谷的一段话）：
+
+**从** **shuffle** **的角度**：reduceByKey 和 groupByKey 都存在 shuffle 的操作，但是 reduceByKey
+
+可以在 shuffle 前对分区内相同 key 的数据进行预聚合（combine）功能，这样会减少落盘的
+
+数据量，而 groupByKey 只是进行分组，不存在数据量减少的问题，reduceByKey 性能比较
+
+高。
+
+**从功能的角度**：reduceByKey 其实包含分组和聚合的功能。GroupByKey 只能分组，不能聚
+
+合，所以在分组聚合的场合下，推荐使用 reduceByKey，如果仅仅是分组而不需要聚合。那
+
+么还是只能使用 groupByKey
