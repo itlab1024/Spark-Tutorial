@@ -252,7 +252,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object WordCount {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf: SparkConf = new SparkConf().setAppName("统计单词数量").setMaster("local")
+    val conf: SparkConf = new SparkConf().setAppName("统计单词数量").setMaster("local[*]")
     val sc: SparkContext = new SparkContext(conf)
     //1. 将文件中的数据读入到内存，结果是一行一行的。
     val rdd: RDD[String] = sc.textFile("files/wordCount.txt")
@@ -271,90 +271,7 @@ object WordCount {
 ```
 运行结果：
 ```text
-/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/bin/java -agentlib:jdwp=transport=dt_socket,address=127.0.0.1:52978,suspend=y,server=n -javaagent:/Users/itlab/Library/Caches/JetBrains/IntelliJIdea2022.2/captureAgent/debugger-agent.jar -Dfile.encoding=UTF-8 -classpath /Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_333.jdk/Contents/Home/jre/lib/rt.jar:/Users/itlab/workspace/github/Spark-Tutorial/target/scala-2.12/classes:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/clearspring/analytics/stream/2.9.6/stream-2.9.6.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/esotericsoftware/kryo-shaded/4.0.2/kryo-shaded-4.0.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/esotericsoftware/minlog/1.3.0/minlog-1.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.13.3/jackson-annotations-2.13.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.13.3/jackson-core-2.13.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.13.3/jackson-databind-2.13.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-scala_2.12/2.13.3/jackson-module-scala_2.12-2.13.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/github/luben/zstd-jni/1.5.2-1/zstd-jni-1.5.2-1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/google/crypto/tink/tink/1.6.1/tink-1.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/google/guava/guava/16.0.1/guava-16.0.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.14.0/protobuf-java-3.14.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/ning/compress-lzf/1.1/compress-lzf-1.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/thoughtworks/paranamer/paranamer/2.8/paranamer-2.8.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/twitter/chill-java/0.10.0/chill-java-0.10.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/com/twitter/chill_2.12/0.10.0/chill_2.12-0.10.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-io/commons-io/2.11.0/commons-io-2.11.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core/4.2.7/metrics-core-4.2.7.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/dropwizard/metrics/metrics-graphite/4.2.7/metrics-graphite-4.2.7.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/dropwizard/metrics/metrics-jmx/4.2.7/metrics-jmx-4.2.7.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/dropwizard/metrics/metrics-json/4.2.7/metrics-json-4.2.7.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/dropwizard/metrics/metrics-jvm/4.2.7/metrics-jvm-4.2.7.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-all/4.1.74.Final/netty-all-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-buffer/4.1.74.Final/netty-buffer-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-codec/4.1.74.Final/netty-codec-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-common/4.1.74.Final/netty-common-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-handler/4.1.74.Final/netty-handler-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-resolver/4.1.74.Final/netty-resolver-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-tcnative-classes/2.0.48.Final/netty-tcnative-classes-2.0.48.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-classes-epoll/4.1.74.Final/netty-transport-classes-epoll-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-classes-kqueue/4.1.74.Final/netty-transport-classes-kqueue-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-epoll/4.1.74.Final/netty-transport-native-epoll-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-epoll/4.1.74.Final/netty-transport-native-epoll-4.1.74.Final-linux-aarch_64.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-epoll/4.1.74.Final/netty-transport-native-epoll-4.1.74.Final-linux-x86_64.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-kqueue/4.1.74.Final/netty-transport-native-kqueue-4.1.74.Final-osx-aarch_64.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-kqueue/4.1.74.Final/netty-transport-native-kqueue-4.1.74.Final-osx-x86_64.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport-native-unix-common/4.1.74.Final/netty-transport-native-unix-common-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/io/netty/netty-transport/4.1.74.Final/netty-transport-4.1.74.Final.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/jakarta/annotation/jakarta.annotation-api/1.3.5/jakarta.annotation-api-1.3.5.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/4.0.3/jakarta.servlet-api-4.0.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/jakarta/validation/jakarta.validation-api/2.0.2/jakarta.validation-api-2.0.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/jakarta/ws/rs/jakarta.ws.rs-api/2.1.6/jakarta.ws.rs-api-2.1.6.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/javax/activation/activation/1.1.1/activation-1.1.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/net/razorvine/pickle/1.2/pickle-1.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/net/sf/py4j/py4j/0.10.9.5/py4j-0.10.9.5.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/avro/avro-ipc/1.11.0/avro-ipc-1.11.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/avro/avro-mapred/1.11.0/avro-mapred-1.11.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/avro/avro/1.11.0/avro-1.11.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-compress/1.21/commons-compress-1.21.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-crypto/1.1.0/commons-crypto-1.1.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/commons/commons-text/1.9/commons-text-1.9.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/curator/curator-client/2.13.0/curator-client-2.13.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/curator/curator-framework/2.13.0/curator-framework-2.13.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/curator/curator-recipes/2.13.0/curator-recipes-2.13.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.3.2/hadoop-client-api-3.3.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-runtime/3.3.2/hadoop-client-runtime-3.3.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.0/ivy-2.5.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/logging/log4j/log4j-1.2-api/2.17.2/log4j-1.2-api-2.17.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.17.2/log4j-api-2.17.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.17.2/log4j-core-2.17.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.17.2/log4j-slf4j-impl-2.17.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-core_2.12/3.3.0/spark-core_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-kvstore_2.12/3.3.0/spark-kvstore_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-launcher_2.12/3.3.0/spark-launcher_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-network-common_2.12/3.3.0/spark-network-common_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-network-shuffle_2.12/3.3.0/spark-network-shuffle_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-tags_2.12/3.3.0/spark-tags_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/spark/spark-unsafe_2.12/3.3.0/spark-unsafe_2.12-3.3.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/xbean/xbean-asm9-shaded/4.20/xbean-asm9-shaded-4.20.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/yetus/audience-annotations/0.5.0/audience-annotations-0.5.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/zookeeper/zookeeper-jute/3.6.2/zookeeper-jute-3.6.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/apache/zookeeper/zookeeper/3.6.2/zookeeper-3.6.2.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/fusesource/leveldbjni/leveldbjni-all/1.8/leveldbjni-all-1.8.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/external/aopalliance-repackaged/2.6.1/aopalliance-repackaged-2.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/external/jakarta.inject/2.6.1/jakarta.inject-2.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/hk2-api/2.6.1/hk2-api-2.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/hk2-locator/2.6.1/hk2-locator-2.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils/2.6.1/hk2-utils-2.6.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/hk2/osgi-resource-locator/1.0.3/osgi-resource-locator-1.0.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/containers/jersey-container-servlet-core/2.34/jersey-container-servlet-core-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/containers/jersey-container-servlet/2.34/jersey-container-servlet-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/core/jersey-client/2.34/jersey-client-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/core/jersey-common/2.34/jersey-common-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/core/jersey-server/2.34/jersey-server-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/glassfish/jersey/inject/jersey-hk2/2.34/jersey-hk2-2.34.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/javassist/javassist/3.25.0-GA/javassist-3.25.0-GA.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/json4s/json4s-ast_2.12/3.7.0-M11/json4s-ast_2.12-3.7.0-M11.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/json4s/json4s-core_2.12/3.7.0-M11/json4s-core_2.12-3.7.0-M11.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/json4s/json4s-jackson_2.12/3.7.0-M11/json4s-jackson_2.12-3.7.0-M11.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/json4s/json4s-scalap_2.12/3.7.0-M11/json4s-scalap_2.12-3.7.0-M11.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/lz4/lz4-java/1.8.0/lz4-java-1.8.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/objenesis/objenesis/2.5.1/objenesis-2.5.1.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/roaringbitmap/RoaringBitmap/0.9.25/RoaringBitmap-0.9.25.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/roaringbitmap/shims/0.9.25/shims-0.9.25.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/rocksdb/rocksdbjni/6.20.3/rocksdbjni-6.20.3.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_2.12/1.2.0/scala-xml_2.12-1.2.0.jar:/Users/itlab/.sbt/boot/scala-2.12.16/lib/scala-library.jar:/Users/itlab/.sbt/boot/scala-2.12.16/lib/scala-reflect.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.32/jcl-over-slf4j-1.7.32.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/slf4j/jul-to-slf4j/1.7.32/jul-to-slf4j-1.7.32.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.35/slf4j-api-1.7.35.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/spark-project/spark/unused/1.0.0/unused-1.0.0.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/tukaani/xz/1.9/xz-1.9.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.8.4/snappy-java-1.1.8.4.jar:/Users/itlab/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/oro/oro/2.0.8/oro-2.0.8.jar:/Users/itlab/Library/Application Support/JetBrains/Toolbox/apps/IDEA-U/ch-0/222.3739.54/IntelliJ IDEA.app/Contents/lib/idea_rt.jar com.itlab1024.spark.start.WordCount
-Connected to the target VM, address: '127.0.0.1:52978', transport: 'socket'
-Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
-22/09/01 15:13:36 WARN Utils: Your hostname, ITshiyanshideMacBook-Pro.local resolves to a loopback address: 127.0.0.1; using 10.112.82.59 instead (on interface en0)
-22/09/01 15:13:36 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
-22/09/01 15:13:37 INFO SparkContext: Running Spark version 3.3.0
-22/09/01 15:13:37 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-22/09/01 15:13:38 INFO ResourceUtils: ==============================================================
-22/09/01 15:13:38 INFO ResourceUtils: No custom resources configured for spark.driver.
-22/09/01 15:13:38 INFO ResourceUtils: ==============================================================
-22/09/01 15:13:38 INFO SparkContext: Submitted application: 统计单词数量
-22/09/01 15:13:38 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
-22/09/01 15:13:38 INFO ResourceProfile: Limiting resource is cpu
-22/09/01 15:13:38 INFO ResourceProfileManager: Added ResourceProfile id: 0
-22/09/01 15:13:38 INFO SecurityManager: Changing view acls to: itlab
-22/09/01 15:13:38 INFO SecurityManager: Changing modify acls to: itlab
-22/09/01 15:13:38 INFO SecurityManager: Changing view acls groups to: 
-22/09/01 15:13:38 INFO SecurityManager: Changing modify acls groups to: 
-22/09/01 15:13:38 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(itlab); groups with view permissions: Set(); users  with modify permissions: Set(itlab); groups with modify permissions: Set()
-22/09/01 15:13:39 INFO Utils: Successfully started service 'sparkDriver' on port 52982.
-22/09/01 15:13:39 INFO SparkEnv: Registering MapOutputTracker
-22/09/01 15:13:39 INFO SparkEnv: Registering BlockManagerMaster
-22/09/01 15:13:39 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
-22/09/01 15:13:39 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
-22/09/01 15:13:39 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
-22/09/01 15:13:39 INFO DiskBlockManager: Created local directory at /private/var/folders/b7/yhnw9hws0ng2w1_khl8nr2t40000gn/T/blockmgr-49e73bfc-fa98-41e3-9b9e-48a26d04917d
-22/09/01 15:13:39 INFO MemoryStore: MemoryStore started with capacity 912.3 MiB
-22/09/01 15:13:39 INFO SparkEnv: Registering OutputCommitCoordinator
-22/09/01 15:13:40 INFO Utils: Successfully started service 'SparkUI' on port 4040.
-22/09/01 15:13:40 INFO Executor: Starting executor ID driver on host 10.112.82.59
-22/09/01 15:13:40 INFO Executor: Starting executor with user classpath (userClassPathFirst = false): ''
-22/09/01 15:13:40 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 52983.
-22/09/01 15:13:40 INFO NettyBlockTransferService: Server created on 10.112.82.59:52983
-22/09/01 15:13:40 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
-22/09/01 15:13:40 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, 10.112.82.59, 52983, None)
-22/09/01 15:13:40 INFO BlockManagerMasterEndpoint: Registering block manager 10.112.82.59:52983 with 912.3 MiB RAM, BlockManagerId(driver, 10.112.82.59, 52983, None)
-22/09/01 15:13:40 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, 10.112.82.59, 52983, None)
-22/09/01 15:13:40 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, 10.112.82.59, 52983, None)
-22/09/01 15:13:42 INFO MemoryStore: Block broadcast_0 stored as values in memory (estimated size 358.0 KiB, free 912.0 MiB)
-22/09/01 15:13:43 INFO MemoryStore: Block broadcast_0_piece0 stored as bytes in memory (estimated size 32.3 KiB, free 911.9 MiB)
-22/09/01 15:13:43 INFO BlockManagerInfo: Added broadcast_0_piece0 in memory on 10.112.82.59:52983 (size: 32.3 KiB, free: 912.3 MiB)
-22/09/01 15:13:43 INFO SparkContext: Created broadcast 0 from textFile at WordCount.scala:12
-22/09/01 15:13:43 INFO FileInputFormat: Total input files to process : 1
-22/09/01 15:13:43 INFO SparkContext: Starting job: collect at WordCount.scala:20
-22/09/01 15:13:44 INFO DAGScheduler: Registering RDD 3 (map at WordCount.scala:16) as input to shuffle 0
-22/09/01 15:13:44 INFO DAGScheduler: Got job 0 (collect at WordCount.scala:20) with 1 output partitions
-22/09/01 15:13:44 INFO DAGScheduler: Final stage: ResultStage 1 (collect at WordCount.scala:20)
-22/09/01 15:13:44 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 0)
-22/09/01 15:13:44 INFO DAGScheduler: Missing parents: List(ShuffleMapStage 0)
-22/09/01 15:13:44 INFO DAGScheduler: Submitting ShuffleMapStage 0 (MapPartitionsRDD[3] at map at WordCount.scala:16), which has no missing parents
-22/09/01 15:13:44 INFO MemoryStore: Block broadcast_1 stored as values in memory (estimated size 6.9 KiB, free 911.9 MiB)
-22/09/01 15:13:44 INFO MemoryStore: Block broadcast_1_piece0 stored as bytes in memory (estimated size 4.0 KiB, free 911.9 MiB)
-22/09/01 15:13:44 INFO BlockManagerInfo: Added broadcast_1_piece0 in memory on 10.112.82.59:52983 (size: 4.0 KiB, free: 912.3 MiB)
-22/09/01 15:13:44 INFO SparkContext: Created broadcast 1 from broadcast at DAGScheduler.scala:1513
-22/09/01 15:13:44 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 0 (MapPartitionsRDD[3] at map at WordCount.scala:16) (first 15 tasks are for partitions Vector(0))
-22/09/01 15:13:44 INFO TaskSchedulerImpl: Adding task set 0.0 with 1 tasks resource profile 0
-22/09/01 15:13:44 INFO TaskSetManager: Starting task 0.0 in stage 0.0 (TID 0) (10.112.82.59, executor driver, partition 0, PROCESS_LOCAL, 4527 bytes) taskResourceAssignments Map()
-22/09/01 15:13:44 INFO Executor: Running task 0.0 in stage 0.0 (TID 0)
-22/09/01 15:13:46 INFO HadoopRDD: Input split: file:/Users/itlab/workspace/github/Spark-Tutorial/files/wordCount.txt:0+75
-22/09/01 15:13:46 INFO Executor: Finished task 0.0 in stage 0.0 (TID 0). 1341 bytes result sent to driver
-22/09/01 15:13:46 INFO TaskSetManager: Finished task 0.0 in stage 0.0 (TID 0) in 1786 ms on 10.112.82.59 (executor driver) (1/1)
-22/09/01 15:13:46 INFO TaskSchedulerImpl: Removed TaskSet 0.0, whose tasks have all completed, from pool 
-22/09/01 15:13:46 INFO DAGScheduler: ShuffleMapStage 0 (map at WordCount.scala:16) finished in 2.219 s
-22/09/01 15:13:46 INFO DAGScheduler: looking for newly runnable stages
-22/09/01 15:13:46 INFO DAGScheduler: running: Set()
-22/09/01 15:13:46 INFO DAGScheduler: waiting: Set(ResultStage 1)
-22/09/01 15:13:46 INFO DAGScheduler: failed: Set()
-22/09/01 15:13:46 INFO DAGScheduler: Submitting ResultStage 1 (ShuffledRDD[4] at reduceByKey at WordCount.scala:18), which has no missing parents
-22/09/01 15:13:46 INFO MemoryStore: Block broadcast_2 stored as values in memory (estimated size 5.2 KiB, free 911.9 MiB)
-22/09/01 15:13:46 INFO MemoryStore: Block broadcast_2_piece0 stored as bytes in memory (estimated size 3.1 KiB, free 911.9 MiB)
-22/09/01 15:13:46 INFO BlockManagerInfo: Added broadcast_2_piece0 in memory on 10.112.82.59:52983 (size: 3.1 KiB, free: 912.3 MiB)
-22/09/01 15:13:46 INFO SparkContext: Created broadcast 2 from broadcast at DAGScheduler.scala:1513
-22/09/01 15:13:46 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 1 (ShuffledRDD[4] at reduceByKey at WordCount.scala:18) (first 15 tasks are for partitions Vector(0))
-22/09/01 15:13:46 INFO TaskSchedulerImpl: Adding task set 1.0 with 1 tasks resource profile 0
-22/09/01 15:13:46 INFO TaskSetManager: Starting task 0.0 in stage 1.0 (TID 1) (10.112.82.59, executor driver, partition 0, NODE_LOCAL, 4271 bytes) taskResourceAssignments Map()
-22/09/01 15:13:46 INFO Executor: Running task 0.0 in stage 1.0 (TID 1)
-22/09/01 15:13:46 INFO ShuffleBlockFetcherIterator: Getting 1 (97.0 B) non-empty blocks including 1 (97.0 B) local and 0 (0.0 B) host-local and 0 (0.0 B) push-merged-local and 0 (0.0 B) remote blocks
-22/09/01 15:13:46 INFO ShuffleBlockFetcherIterator: Started 0 remote fetches in 34 ms
-22/09/01 15:13:46 INFO Executor: Finished task 0.0 in stage 1.0 (TID 1). 1535 bytes result sent to driver
-22/09/01 15:13:46 INFO TaskSetManager: Finished task 0.0 in stage 1.0 (TID 1) in 245 ms on 10.112.82.59 (executor driver) (1/1)
-22/09/01 15:13:46 INFO TaskSchedulerImpl: Removed TaskSet 1.0, whose tasks have all completed, from pool 
-22/09/01 15:13:46 INFO DAGScheduler: ResultStage 1 (collect at WordCount.scala:20) finished in 0.280 s
-22/09/01 15:13:46 INFO DAGScheduler: Job 0 is finished. Cancelling potential speculative or zombie tasks for this job
-22/09/01 15:13:46 INFO TaskSchedulerImpl: Killing all running tasks in stage 1: Stage finished
+-------省略一部分日志------
 22/09/01 15:13:46 INFO DAGScheduler: Job 0 finished: collect at WordCount.scala:20, took 3.147017 s
 (scala,1)
 (learning,4)
@@ -364,19 +281,7 @@ Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
 (java,1)
 (go,1)
 22/09/01 15:13:46 INFO SparkUI: Stopped Spark web UI at http://10.112.82.59:4040
-22/09/01 15:13:46 INFO BlockManagerInfo: Removed broadcast_2_piece0 on 10.112.82.59:52983 in memory (size: 3.1 KiB, free: 912.3 MiB)
-22/09/01 15:13:47 INFO MapOutputTrackerMasterEndpoint: MapOutputTrackerMasterEndpoint stopped!
-22/09/01 15:13:47 INFO MemoryStore: MemoryStore cleared
-22/09/01 15:13:47 INFO BlockManager: BlockManager stopped
-22/09/01 15:13:47 INFO BlockManagerMaster: BlockManagerMaster stopped
-22/09/01 15:13:47 INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
-22/09/01 15:13:47 INFO SparkContext: Successfully stopped SparkContext
-22/09/01 15:13:47 INFO ShutdownHookManager: Shutdown hook called
-22/09/01 15:13:47 INFO ShutdownHookManager: Deleting directory /private/var/folders/b7/yhnw9hws0ng2w1_khl8nr2t40000gn/T/spark-4fab4f8b-374b-4fba-87fd-d06176d5e405
-Disconnected from the target VM, address: '127.0.0.1:52978', transport: 'socket'
-
-Process finished with exit code 0
-
+-------省略一部分日志------
 ```
 可以看到日志中打印出来了统计的结果：
 ```text
@@ -1336,7 +1241,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object RDDCreate01 {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     // 准备内存Seq数据
@@ -1449,7 +1354,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object MapOperator {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6))
@@ -1486,7 +1391,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object FilterOperator {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     val intRDD = sc.makeRDD(List(1, 2, 3, 4, 5, 6))
@@ -1516,7 +1421,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object FlatMapOperator {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
-    val conf = new SparkConf().setAppName("应用").setMaster("local")
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     val intRDD = sc.makeRDD(Array(List(1, 2), List(3, 4)))
@@ -2060,3 +1965,14 @@ object GroupByKeyOperator {
 合，所以在分组聚合的场合下，推荐使用 reduceByKey，如果仅仅是分组而不需要聚合。那
 
 么还是只能使用 groupByKey
+
+### aggregateByKey
+
+通过key聚合，不同于reduceByKey的是，该算子将数据根据不同的规则进行分区内计算和分区间计算，可以分别指定分区内和分区间聚合的方法（可以不同）。
+
+该算子使用了函数的柯里话，有两个参数列表，第一个参数列表有一个参数，代表初始值，第二个参数列表有两个参数，参数一代表减区间的计算函数，参数2代表分区内的函数。
+
+比如我可以选择将分区内的计算使用获取最大值，分区间的聚合使用相加，看如下示例。
+
+
+
