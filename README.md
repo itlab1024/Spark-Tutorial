@@ -1974,5 +1974,43 @@ object GroupByKeyOperator {
 
 比如我可以选择将分区内的计算使用获取最大值，分区间的聚合使用相加，看如下示例。
 
+```scala
+package com.itlab1024.spark.core.operations
 
+import org.apache.spark.{SparkConf, SparkContext}
 
+/**
+ *
+ *
+ * @author itlab
+ */
+object AggregateByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    // 第一个分区数据是("a", 1), ("a", 2), ("c", 3)
+    // 第二个分区数据是("b", 4), ("c", 5), ("c", 6)
+    val rdd = sc.makeRDD(List(
+      ("a", 1), ("a", 2), ("c", 3),
+      ("b", 4), ("c", 5), ("c", 6)
+    ), 2)
+    // 初始零值是=0
+    val r = rdd.aggregateByKey(0)((x, y) => {
+      math.max(x, y)
+    }, _ + _)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+分析下，整数代码中注释所写的那样，初始数据被分为两个分区，// 第一个分区数据是("a", 1), ("a", 2), ("c", 3)，// 第二个分区数据是("b", 4), ("c", 5), ("c", 6)，零值=0，分区内的算法是相同的key获取最大的，所以第一个分区就变为了("a", 2), ("c", 3)，第二个分区就是("b", 4), ("c", 6)，那么最终的结果就应该是 (a,2) (b,4) (c,9)。
+
+看下代码运行截图
+
+![image-20220916174337942](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209161743473.png)
+
+确实是这样。
