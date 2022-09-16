@@ -1332,7 +1332,7 @@ value.foreach(println)
 
 ![image-20220913161907868](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209131619130.png)
 
-## 算子
+## 转换算子
 
 前面已经简单介绍过算子，这里我要一个一个具体学习每一个算子的含义以及如何使用。
 
@@ -2014,3 +2014,222 @@ object AggregateByKeyOperator {
 ![image-20220916174337942](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209161743473.png)
 
 确实是这样。
+
+### foldByKey
+
+功能跟aggregateByKey类似，当分区内计算规则和分区间计算规则相同时，aggregateByKey 就可以简化为 foldByKey。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object FoldByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    // 第一个分区数据是("a", 1), ("a", 2), ("c", 3)
+    // 第二个分区数据是("b", 4), ("c", 5), ("c", 6)
+    val rdd = sc.makeRDD(List(
+      ("a", 1), ("a", 2), ("c", 3),
+      ("b", 4), ("c", 5), ("c", 6)
+    ), 2)
+    // 初始零值是=0
+    val r = rdd.foldByKey(0)( _ + _)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+上面的foldByKey，有两个参数列表，第一个是零值，第二个是分区内和分区间相同的算法函数（相加）。
+
+运行结果：
+
+![image-20220916174803032](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209161748248.png)
+
+可以看到key相同的值都累加了起来。
+
+### combineByKey
+
+### sortByKey
+
+通过Key进行排序，有两个参数，第一个代表正序还是倒序，第二个代表分区数
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SortByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    // 第一个分区数据是("a", 1), ("a", 2), ("c", 3)
+    // 第二个分区数据是("b", 4), ("c", 5), ("c", 6)
+    val rdd = sc.makeRDD(List(
+      ("a", 1), ("a", 2), ("c", 3),
+      ("b", 4), ("c", 5), ("c", 6)
+    ), 2)
+    
+    val r = rdd.sortByKey(true, 1)
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220916175324179](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209161753403.png)
+
+### join
+
+在类型为(K,V)和(K,W)的 RDD 上调用，返回一个相同 key 对应的所有元素连接在一起的
+
+(K,(V,W))的 RDD，类似于SQL中的Key
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object JoinOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(("a", 1), ("b", "B")))
+    val rdd2 = sc.makeRDD(List(("a", "A"), ("c", 3)))
+    val r = rdd1.join(rdd2)
+    r.foreach(println) // (a,(1,A))
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+两个RDD中key相同的只有a，结果就是(a,(1,A))。
+
+### leftOuterJoin
+
+两个RDD左外连接（比如rdd1 leftOuterJoin rdd2）。对于rdd1中的每个元素 (k, v) ，生成的 RDD 将包含rdd2中 w 的所有对 (k, (v, Some(w))) ，如果没有则包含对 (k, (v, None)) rdd2中的元素具有键 k。使用给定的 Partitioner 对输出 RDD 进行分区， Some和None都是Option的子类，不懂得去看看scala。
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object LeftOuterJoinOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(("a", 1), ("b", "B")))
+    val rdd2 = sc.makeRDD(List(("a", "A"), ("c", 3)))
+    val r = rdd1.leftOuterJoin(rdd2, 1)
+    r.foreach(println)
+    // 结果是
+    //(a,(1,Some(A)))
+    //(b,(B,None))
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+解析，因为是rdd1 左关联rdd2，所以rdd1的key肯定是全部输出的，两个RDD都是key=a的数据，所以将其值1和b合并外一个元组。key=b在rdd2中没有，所以是None，如果你将其理解我SQL中的NULL，是不是更好理解？
+
+### rightOuterJoin
+
+右关联，跟leftOuterJoin相反
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object RightOuterJoinOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(("a", 1), ("b", "B")))
+    val rdd2 = sc.makeRDD(List(("a", "A"), ("c", 3)))
+    val r = rdd2.rightOuterJoin(rdd1, 1)
+    r.foreach(println)
+    // 结果是
+//    (a, (Some(A), 1))
+//    (b, (None, B))
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### fullOuterJoin
+
+就是左右两个表所有的key都保留
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object FullOuterJoinOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(("a", 1), ("b", "B")))
+    val rdd2 = sc.makeRDD(List(("a", "A"), ("c", 3)))
+    val r = rdd2.fullOuterJoin(rdd1, 1)
+    r.foreach(println)
+    // 结果是
+    //(a,(Some(A),Some(1)))
+    //(b,(None,Some(B)))
+    //(c,(Some(3),None))
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
