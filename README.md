@@ -2352,3 +2352,230 @@ object PipeOperator {
 
 ### reduce
 
+聚集 RDD 中的所有元素，先聚合分区内数据，再聚合分区间数据
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object ReduceOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3))
+    val r: Int = rdd.reduce(_ + _) // 6
+    println(r)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+可以看到原始RDD是[1, 2, 3]，reduce的函数是两数相加。结果就是1 + 2 + 3 = 6。
+
+### collect
+
+该算子主要是将各个分区的数据统一收集到Driver中。
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object CollectOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3), 2)
+    val ints: Array[Int] = rdd.collect()
+    println(ints.mkString("Array(", ", ", ")")) // Array(1, 2, 3)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+需要注意的是collect是将所有的数据收集到Driver，那么可能数据量很大出现OOM。
+
+### count
+
+返回RDD中元素的个数
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object CountOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3), 2)
+    val l: Long = rdd.count()
+    println(l) // 3
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### first
+
+返回RDD中的第一个元素，类似于take(1)
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object FirstOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3), 2)
+    val l: Int = rdd.first() // 获取RDD中第一个元素
+    println(l) // 1
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### take
+
+获取rdd中前n个数据，首先扫描一个分区，然后使用该分区的结果来估计满足限制所需的附加分区数。
+需要注意的是：仅当预期结果数组很小时才应使用此方法，因为所有数据都加载到Driver的内存中。
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object TakeOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3), 2)
+    val l: Array[Int] = rdd.take(2) // 获取RDD前两个元素
+    println(l.mkString(",")) // 1,2
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### takeOrdered
+
+先排序再返回前n个元素
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object TakeOrderedOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)
+    val l: Array[Int] = rdd.takeOrdered(2)((x: Int, y: Int) => {
+      y - x
+    }) // 先排序获取RDD前两个元素
+    println(l.mkString(",")) // 5, 3
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+上面的代码中，我将RDD降序，然后获取前两个元素，默认是升序。这里需要注意的是该出使用了scala的函数科柯里化。
+
+### aggregate
+
+分区的数据通过初始值和分区内的数据进行聚合，然后再和初始值进行分区间的数据聚合
+
+这个算子稍微有点不好理解，先看函数签名：**(zeroValue: U)** **(seqOp: (U, T) ⇒ U, combOp: (U, U) ⇒ U)**
+
+通过例子来解释。
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object AggregateOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)
+    // 以零值=2作为初始值，对第一个分区[3, 0]做加法聚合运算，结果是5
+    // 以零值=2作为初始值，对第二个分区[8, 0]做加法聚合运算，结果是8
+    // 上线是分区内部的计算，接下来进行分区间的计算，使用零值分别减去各个分区的结果，2 - 5 - 8 = -11
+    val r: Int = rdd.aggregate(2)(_ + _, _ - _)
+    println(r) // -11
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+看上面的例子：
+
+val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)有两个分区，
+
+// 以零值=2作为初始值，对第一个分区[3, 0]做加法聚合运算，结果是5
+// 以零值=2作为初始值，对第二个分区[8, 0]做加法聚合运算，结果是8
+// 上线是分区内部的计算，接下来进行分区间的计算，使用零值分别减去各个分区的结果，2 - 5 - 8 = -11
+
+那么零值被使用了几次呢？三次，两个分区各使用了一次，分区间最后计算使用了一次。所以是三次。能否理解呢？
+
