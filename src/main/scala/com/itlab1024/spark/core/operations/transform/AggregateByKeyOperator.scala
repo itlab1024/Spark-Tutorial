@@ -1,4 +1,4 @@
-package com.itlab1024.spark.core.operations
+package com.itlab1024.spark.core.operations.transform
 
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -7,7 +7,7 @@ import org.apache.spark.{SparkConf, SparkContext}
  *
  * @author itlab
  */
-object FoldByKeyOperator {
+object AggregateByKeyOperator {
   def main(args: Array[String]): Unit = {
     // 定义配置，通过配置建立连接
     val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
@@ -20,7 +20,9 @@ object FoldByKeyOperator {
       ("b", 4), ("c", 5), ("c", 6)
     ), 2)
     // 初始零值是=0
-    val r = rdd.foldByKey(0)( _ + _)
+    val r = rdd.aggregateByKey(0)((x, y) => {
+      math.max(x, y)
+    }, _ + _)
     r.foreach(println)
     // 关闭连接
     sc.stop()

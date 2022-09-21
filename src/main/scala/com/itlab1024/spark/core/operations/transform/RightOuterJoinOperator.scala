@@ -1,4 +1,4 @@
-package com.itlab1024.spark.core.operations
+package com.itlab1024.spark.core.operations.transform
 
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -18,8 +18,8 @@ object RightOuterJoinOperator {
     val r = rdd2.rightOuterJoin(rdd1, 1)
     r.foreach(println)
     // 结果是
-//    (a, (Some(A), 1))
-//    (b, (None, B))
+    //    (a, (Some(A), 1))
+    //    (b, (None, B))
     // 关闭连接
     sc.stop()
   }
