@@ -2233,3 +2233,122 @@ object FullOuterJoinOperator {
 }
 ```
 
+### cogroup
+
+在类型为(K,V)和(K,W)的 RDD 上调用，返回一个(K,(Iterable<V>,Iterable<W>))类型的 RDD
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object CogroupOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(("a", 1), ("b", "B")))
+    val rdd2 = sc.makeRDD(List[(String, Any)](("a", "A"), ("c", 3)))
+    val r: RDD[(String, (Iterable[Any], Iterable[Any]))] = rdd1.cogroup(rdd2, 1)
+    r.foreach(println)
+    // 结果是
+    //(a,(CompactBuffer(1),CompactBuffer(A)))
+    //(b,(CompactBuffer(B),CompactBuffer()))
+    //(c,(CompactBuffer(),CompactBuffer(3)))
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### cartesian
+
+获取笛卡尔积RDD
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object CartesianOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(1, 2, 3, 4))
+    val rdd2 = sc.makeRDD(List(5, 6, 7, 8))
+    val r: RDD[(Int, Int)] = rdd1.cartesian(rdd2)
+    r.foreach(println) // 结果是两个RDD的笛卡尔积,两个RDD中的任意两个组合结果
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### pipe
+
+该算子，主要是用于对多有分区执行命令或者脚本，返回输出的RDD，借用网上一张图说明下
+
+![在这里插入图片描述](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209211956534.png)
+
+先创建一个shell脚本，该脚本的意思是将数据前面增加>>>字符，比如1变为了>>>1。
+
+```shell
+#!/bin/sh
+echo "开始"
+# shellcheck disable=SC2162
+while read LINE; do
+   echo ">>>""${LINE}"
+done
+```
+
+
+
+```scala
+package com.itlab1024.spark.core.operations
+
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object PipeOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd1 = sc.makeRDD(List(1, 2, 3, 4))
+    val r: RDD[String] = rdd1.pipe("command/pipe.sh")
+    r.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+下图是打印结果
+
+![image-20220921200448011](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209212004275.png)
+
+## 行动（Action）算子
+
+### reduce
+
