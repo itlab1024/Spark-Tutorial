@@ -1216,6 +1216,30 @@ scala>     result.collect().foreach(println)
 
 Spark对应用进行处理，可以分解为多个Job，依据主要是根据Action算子，遇到Action算子就会拆解为job，而每一个Job中如果遇到Shuffle算子（洗牌算子，数据会重新分区），就会拆解为stage，spark会将某个或者某些算子放到一起组装为一个Task（Spark自身有优化，会将某些算子放到一起，拆分规则我暂时不清楚），最终的task会发送到Executer执行，Task也是Spark的最小执行单元。
 
+来总结下。RDD 任务切分中间分为：Application、Job、Stage 和 Task
+
+*  Application：初始化一个 SparkContext 即生成一个 Application； 
+
+*  Job：一个 Action 算子就会生成一个 Job； 
+
+* Stage：Stage 等于宽依赖(ShuffleDependency)的个数加 1； 
+
+*  Task：一个 Stage 阶段中，最后一个 RDD 的分区个数就是 Task 的个数
+
+这里提到了宽依赖，也有窄依赖，接下来来说明下。我们知道RDD是可以通过算子转化为另外的RDD的，那么这两个RDD就有关系了，根据关系情况就会分为宽窄依赖
+
+**窄依赖**
+
+窄依赖表示每一个父(上游)RDD 的 Partition 最多被子（下游）RDD 的一个 Partition 使用，
+
+窄依赖我们形象的比喻为独生子女。
+
+**宽依赖**
+
+宽依赖表示同一个父（上游）RDD 的 Partition 被多个子（下游）RDD 的 Partition 依赖，会
+
+引起 Shuffle，总结：宽依赖我们形象的比喻为多生
+
 ## 创建RDD
 
 RDD的创建方式有很多
@@ -2578,4 +2602,340 @@ val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)有两个分区，
 // 上线是分区内部的计算，接下来进行分区间的计算，使用零值分别减去各个分区的结果，2 - 5 - 8 = -11
 
 那么零值被使用了几次呢？三次，两个分区各使用了一次，分区间最后计算使用了一次。所以是三次。能否理解呢？
+
+### fold
+
+aggregate的简化版，当分区内和分区间的计算函数相同时，两者等价
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object FoldOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)
+    //    val r: Int = rdd.aggregate(2)(_ + _, _ + _) 等价于下面的fold
+    val r: Int = rdd.fold(2)(_ + _)
+    println(r)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### countByKey
+
+统计每种 key 的个数,返回一个Map类型的数据
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object CountByKeyOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    val r: collection.Map[Int, Long] = rdd.countByKey()
+    println(r) // Map(2 -> 1, 1 -> 2)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+### saveAsTextFile
+
+将数据保存到文件中，前面其实已经用过。
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SaveAsTextOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    rdd.saveAsTextFile("partitions")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+![image-20220922101704534](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209221017015.png)
+
+会生成分区文件以及校验文件等内容。
+
+### saveAsObjectFile
+
+将数据序列化为对象保存到文件中。
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SaveAsObjectOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    rdd.saveAsObjectFile("partitions")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+运行结果如下：
+
+![image-20220922102000720](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209221020982.png)
+
+### saveAsSequenceFile
+
+保存为sequenceFile文件
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SaveAsSequenceFileOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    rdd.saveAsSequenceFile("partitions")
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+运行结果
+
+![image-20220922102328693](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209221023947.png)
+
+
+
+### saveAsHadoopFile
+
+保存为Hadoop支持的文件系统中
+
+```
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.hadoop.io.{IntWritable, Text}
+import org.apache.hadoop.mapred.TextOutputFormat
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object SaveAsHadoopFileOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    rdd.saveAsHadoopFile("partitions", classOf[Text], classOf[IntWritable], classOf[TextOutputFormat[Text,IntWritable]])
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+运行结果如下：
+
+![image-20220922103452063](https://itlab1024-1256529903.cos.ap-beijing.myqcloud.com/202209221034541.png)
+
+### foreach
+
+分布式循环遍历RDD中的元素，调用传入的函数，之前学习算子的时候用了很多
+
+```scala
+package com.itlab1024.spark.core.operations.action
+
+import org.apache.hadoop.io.{IntWritable, Text}
+import org.apache.hadoop.mapred.TextOutputFormat
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object ForeachOperator {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    rdd.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+rdd.foreach(println)就是循环，然后每个元素调用println函数打印。
+
+## RDD持久化
+
+RDD 通过 Cache 或者 Persist 方法将前面的计算结果缓存，默认情况下会把数据以缓存在 JVM 的堆内存中。但是并不是这两个方法被调用时立即缓存，而是触发后面的 action 算 子时，该 RDD 将会被缓存在计算节点的内存中，并供后面重用。
+
+缓存有可能丢失，或者存储于内存的数据由于内存不足而被删除，RDD 的缓存容错机
+
+制保证了即使缓存丢失也能保证计算的正确执行。通过基于 RDD 的一系列转换，丢失的数
+
+据会被重算，由于 RDD 的各个 Partition 是相对独立的，因此只需要计算丢失的部分即可，
+
+并不需要重算全部 Partition。
+
+Spark 会自动对一些 Shuffle 操作的中间数据做持久化操作(比如：reduceByKey)。这样
+
+做的目的是为了当一个节点 Shuffle 失败了避免重新计算整个输入。但是，在实际使用的时
+
+候，如果想重用数据，仍然建议调用 persist 或 cache。
+
+```scala
+package com.itlab1024.spark.core.cache
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ *
+ *
+ * @author itlab
+ */
+object PersistAndCache {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(3, 0, 1, 5), 2)
+    rdd.cache() // 等价于rdd.persist()
+    rdd.foreach(println)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+## 广播变量和累加器
+
+### 广播变量
+
+Spark是一个分布式计算框架，如果Executor端需要访问Driver端的某个变量，spark会向Executor端每个task都发送一个此变量的副本。如果此变量很大，就会占用大量的Executor节点的内存。利用广播变量，spark只会给一个Executor节点发送一个变量，他是一个分布式的只读变量。
+
+```
+package com.itlab1024.spark.core.broadcast
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+/**
+ * 广播变量
+ */
+object BroadcastVar {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List((1, 2), (1, 3), (2, 1)), 2)
+    val min = 1;
+    val v = sc.broadcast(min)
+    // v.value是获取广播变量的值
+    val r = rdd.filter(f => {f._1 > v.value})
+    r.foreach(println) // (2,1)
+    // 关闭连接
+    sc.stop()
+  }
+}
+```
+
+看上面的代码，似乎也没有什么的特别的地方，如果我直接在filter中使用min变量也没有问题。没错，执行结果是没有问题，但是广播变量的特点就是不会有很多副本，这就节省工作节点开支。
+
+### 累加器
+
+累加器用来把 Executor 端变量信息聚合到 Driver 端。在 Driver 程序中定义的变量，在
+
+Executor 端的每个 Task 都会得到这个变量的一份新的副本，每个 task 更新这些副本的值后，
+
+传回 Driver 端进行 merge。
+
+简而言之就是一个全局变量，每个分布式任务计算都是在这个基础上累加的的值。
+
+```scala
+package com.itlab1024.spark.core.accumulator
+
+import org.apache.spark.{SparkConf, SparkContext}
+
+object AccumulatorDemo {
+  def main(args: Array[String]): Unit = {
+    // 定义配置，通过配置建立连接
+    val conf = new SparkConf().setAppName("应用").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    val rdd = sc.makeRDD(List(1, 2, 3, 4, 5))
+    // 声明累加器
+    val sum = sc.longAccumulator("sum");
+    rdd.foreach(
+      num => {
+        // 使用累加器
+        sum.add(num)
+      })
+    // 获取累加器的值
+    println(sum.value) // 15
+  }
+}
+
+```
 
