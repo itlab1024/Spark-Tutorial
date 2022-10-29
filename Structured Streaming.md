@@ -64,7 +64,7 @@ event-time是嵌入到数据本身的时间，比如json:{"ts":1111,"value":1},�
 输入源主要包含文件源、Kafka、Socket、Rate、Rate Per Micro-Batch等，接下来来学习下。
 ## 文件源
 文件源主要包括 text, CSV, JSON, ORC, Parquet等。
-使用csv来实现下。其他大同小异。
+使用csv和json来实现下。其他大同小异。
 ```scala
 package com.itlab1024.spark.stream
 
@@ -78,7 +78,7 @@ object CsvSourceTest {
       .getOrCreate()
     // 从流中读取一行行的输出
     val schema = new StructType().add("id", IntegerType).add("name", StringType).add("money", FloatType)
-    val lines = spark.readStream.schema(schema).csv("files/stream")
+    val lines = spark.readStream.schema(schema).csv("files/stream/csv")
     // 设置输出模式，complete，输出到控制台console
     lines.writeStream.format("console")
       .outputMode("append")
@@ -90,7 +90,7 @@ object CsvSourceTest {
   }
 }
 ```
-files/stream下有一个stream.csv文件，启动后，会读取该文件，控制台输出。
+files/stream/csv下有一个stream.csv文件，启动后，会读取该文件，控制台输出。
 ```shell
 -------------------------------------------
 Batch: 0
@@ -119,4 +119,118 @@ Batch: 1
 |4  |许褚|2.0  |
 |5  |曹丕|44.0 |
 +---+----+-----+
+```
+# 日志配置
+默认打印Info级别的日志，控制台输出内容太多，不容易观察结果，可以在resources目录下配置log4j2.properties文件
+```properties
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Set everything to be logged to the console
+rootLogger.level = warn, console
+rootLogger.appenderRef.stdout.ref = console
+
+# In the pattern layout configuration below, we specify an explicit `%ex` conversion
+# pattern for logging Throwables. If this was omitted, then (by default) Log4J would
+# implicitly add an `%xEx` conversion pattern which logs stacktraces with additional
+# class packaging information. That extra information can sometimes add a substantial
+# performance overhead, so we disable it in our default logging config.
+# For more information, see SPARK-39361.
+appender.console.type = Console
+appender.console.name = console
+appender.console.target = SYSTEM_ERR
+appender.console.layout.type = PatternLayout
+appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n%ex
+
+# Set the default spark-shell/spark-sql log level to WARN. When running the
+# spark-shell/spark-sql, the log level for these classes is used to overwrite
+# the root logger's log level, so that the user can have different defaults
+# for the shell and regular Spark apps.
+logger.repl.name = org.apache.spark.repl.Main
+logger.repl.level = warn
+
+logger.thriftserver.name = org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver
+logger.thriftserver.level = warn
+
+# Settings to quiet third party logs that are too verbose
+logger.jetty1.name = org.sparkproject.jetty
+logger.jetty1.level = warn
+logger.jetty2.name = org.sparkproject.jetty.util.component.AbstractLifeCycle
+logger.jetty2.level = error
+logger.replexprTyper.name = org.apache.spark.repl.SparkIMain$exprTyper
+logger.replexprTyper.level = info
+logger.replSparkILoopInterpreter.name = org.apache.spark.repl.SparkILoop$SparkILoopInterpreter
+logger.replSparkILoopInterpreter.level = info
+logger.parquet1.name = org.apache.parquet
+logger.parquet1.level = error
+logger.parquet2.name = parquet
+logger.parquet2.level = error
+
+# SPARK-9183: Settings to avoid annoying messages when looking up nonexistent UDFs in SparkSQL with Hive support
+logger.RetryingHMSHandler.name = org.apache.hadoop.hive.metastore.RetryingHMSHandler
+logger.RetryingHMSHandler.level = fatal
+logger.FunctionRegistry.name = org.apache.hadoop.hive.ql.exec.FunctionRegistry
+logger.FunctionRegistry.level = error
+
+# For deploying Spark ThriftServer
+# SPARK-34128: Suppress undesirable TTransportException warnings involved in THRIFT-4805
+appender.console.filter.1.type = RegexFilter
+appender.console.filter.1.regex = .*Thrift error occurred during processing of message.*
+appender.console.filter.1.onMatch = deny
+appender.console.filter.1.onMismatch = neutral
+```
+# JSON
+首先准备个JSON文件stream.json
+```json
+{
+  "id": 1,
+  "name": "马超",
+  "money": 1
+}
+```
+编写程序读取
+```scala
+package com.itlab1024.spark.stream
+
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types.{FloatType, IntegerType, StringType, StructType}
+
+object JSONSourceTest {
+  def main(args: Array[String]): Unit = {
+    // 构建sparkSession
+    val spark = SparkSession.builder().appName("单词统计").master("local[1]")
+      .getOrCreate()
+    // 从流中读取一行行的输出
+    val schema = new StructType().add("id", IntegerType).add("name", StringType).add("money", FloatType)
+    val lines = spark.readStream.schema(schema).csv("files/stream/json")
+    // 设置输出模式，complete，输出到控制台console
+    lines.writeStream.format("console")
+      .outputMode("append")
+      .option("truncate", value = false)
+      //TODO 4.启动并等待结果
+      .start()
+      .awaitTermination()
+    spark.stop()
+  }
+}
+```
+启动后，会输出，只有新增文件才能够读取出新数据，修改原来的文件是不能够读取到的。
+**注意**：json文件要求一个json数据是一行，不能换行哦。比如stream.json有两条数据，那么格式应该如下:
+```text
+{"id": 1,"name": "马超", "money": 1}
+{"id": 2,"name": "刘备", "money": 1}
 ```
