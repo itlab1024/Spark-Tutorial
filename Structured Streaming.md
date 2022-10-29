@@ -216,7 +216,7 @@ object JSONSourceTest {
       .getOrCreate()
     // 从流中读取一行行的输出
     val schema = new StructType().add("id", IntegerType).add("name", StringType).add("money", FloatType)
-    val lines = spark.readStream.schema(schema).csv("files/stream/json")
+    val lines = spark.readStream.schema(schema).json("files/stream/json")
     // 设置输出模式，complete，输出到控制台console
     lines.writeStream.format("console")
       .outputMode("append")
